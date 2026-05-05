@@ -4,7 +4,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs,
-  onSnapshot, serverTimestamp, arrayUnion, runTransaction, writeBatch,
+  onSnapshot, serverTimestamp, arrayUnion, arrayRemove, runTransaction, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { DISHES, ALL_REGIONS, DEFAULT_FILTERS, dishesForFilters } from "./dishes.js";
 
@@ -309,6 +309,11 @@ $("manual-form").addEventListener("submit", async (e) => {
   const input = $("manual-input");
   const name = input.value.trim();
   if (!name || !currentHousehold) return;
+  const today = currentHousehold.todaySuggestions || [];
+  if (today.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+    flashHint("Already on today's list");
+    return;
+  }
   await updateDoc(doc(db, "households", currentHousehold.id), {
     todaySuggestions: arrayUnion({
       name,
@@ -321,11 +326,13 @@ $("manual-form").addEventListener("submit", async (e) => {
   flashHint("Suggested for today — open Plan to send to cook");
 });
 
+const ORIGINAL_EXPLAINER = $("manual-explainer").textContent;
+let explainerTimer = null;
 function flashHint(msg) {
   const el = $("manual-explainer");
-  const original = el.textContent;
   el.textContent = msg;
-  setTimeout(() => { el.textContent = original; }, 2200);
+  clearTimeout(explainerTimer);
+  explainerTimer = setTimeout(() => { el.textContent = ORIGINAL_EXPLAINER; }, 2200);
 }
 
 function matchedDishes() {
@@ -346,6 +353,13 @@ function matchedDishes() {
   return out;
 }
 
+function planLi(name, tagText, removeIdx = null) {
+  const li = document.createElement("li");
+  const remove = removeIdx !== null ? `<button data-today-idx="${removeIdx}" title="Remove">×</button>` : "";
+  li.innerHTML = `<span>${escapeHtml(name)} <span class="tag">${escapeHtml(tagText)}</span></span>${remove}`;
+  return li;
+}
+
 function renderPlan() {
   const ul = $("plan-list");
   ul.innerHTML = "";
@@ -356,18 +370,8 @@ function renderPlan() {
     ? `A dish matches when all ${memberCount} members swipe yum. "Today" suggestions skip the vote.`
     : "Invite others with the join code in Settings to make matches happen.";
 
-  today.forEach((s, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${escapeHtml(s.name)} <span class="tag">today · ${escapeHtml(s.byName || "member")}</span></span>` +
-      `<button data-today-idx="${i}" title="Remove">×</button>`;
-    ul.appendChild(li);
-  });
-
-  matched.forEach(({ name }) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${escapeHtml(name)} <span class="tag">matched</span></span>`;
-    ul.appendChild(li);
-  });
+  today.forEach((s, i) => ul.appendChild(planLi(s.name, `today · ${s.byName || "member"}`, i)));
+  matched.forEach(({ name }) => ul.appendChild(planLi(name, "matched")));
 
   if (matched.length === 0 && today.length === 0) {
     const li = document.createElement("li");
@@ -384,8 +388,11 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-today-idx]");
   if (!btn || !currentHousehold) return;
   const idx = Number(btn.dataset.todayIdx);
-  const next = (currentHousehold.todaySuggestions || []).filter((_, i) => i !== idx);
-  await updateDoc(doc(db, "households", currentHousehold.id), { todaySuggestions: next });
+  const item = (currentHousehold.todaySuggestions || [])[idx];
+  if (!item) return;
+  await updateDoc(doc(db, "households", currentHousehold.id), {
+    todaySuggestions: arrayRemove(item),
+  });
 });
 
 $("send-cook-btn").addEventListener("click", () => {
@@ -415,8 +422,8 @@ $("reset-week-btn").addEventListener("click", async () => {
   const snap = await getDocs(collection(db, "households", currentHousehold.id, "swipes"));
   const batch = writeBatch(db);
   snap.docs.forEach((d) => batch.delete(d.ref));
+  batch.update(doc(db, "households", currentHousehold.id), { todaySuggestions: [] });
   await batch.commit();
-  await updateDoc(doc(db, "households", currentHousehold.id), { todaySuggestions: [] });
 });
 
 // ---------- Settings: filters, cook, regions ----------
