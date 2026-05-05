@@ -7,53 +7,177 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
+  <header id="topbar">
     <h1>Meal Swipe</h1>
-    <nav>
-      <button data-tab="swipe" class="tab active">Swipe</button>
-      <button data-tab="prefs" class="tab">Likes &amp; Dislikes</button>
-      <button data-tab="plan" class="tab">This Week</button>
-    </nav>
+    <div id="topbar-right" hidden>
+      <span id="household-pill"></span>
+      <button id="signout-btn" class="link-btn">Sign out</button>
+    </div>
   </header>
 
   <main>
-    <section id="swipe" class="view active">
-      <div id="card-stack" class="card-stack" aria-live="polite"></div>
-      <div class="swipe-actions">
-        <button id="dislike-btn" class="big nope" aria-label="Dislike">Nope</button>
-        <button id="like-btn" class="big yum" aria-label="Like">Yum</button>
-      </div>
-
-      <div class="manual-entry">
-        <p class="hint">Already have something in mind?</p>
-        <form id="manual-form">
-          <input id="manual-input" type="text" placeholder="e.g. Rajma chawal" maxlength="60" autocomplete="off" />
-          <button type="submit">Add to plan</button>
+    <!-- Auth -->
+    <section id="auth-view" class="screen">
+      <div class="card-pane">
+        <h2>Sign in</h2>
+        <p class="hint">We'll text you a 6-digit code.</p>
+        <form id="phone-form">
+          <div class="phone-row">
+            <select id="cc">
+              <option value="+91" selected>+91 IN</option>
+              <option value="+1">+1 US</option>
+              <option value="+44">+44 UK</option>
+              <option value="+971">+971 AE</option>
+              <option value="+65">+65 SG</option>
+            </select>
+            <input id="phone" type="tel" inputmode="numeric" placeholder="Phone number" required />
+          </div>
+          <button type="submit" id="send-otp-btn">Send OTP</button>
         </form>
+
+        <form id="otp-form" hidden>
+          <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" required />
+          <button type="submit">Verify</button>
+          <button type="button" id="otp-back" class="link-btn">Use a different number</button>
+        </form>
+
+        <div id="recaptcha-container"></div>
+        <p id="auth-error" class="error" hidden></p>
       </div>
     </section>
 
-    <section id="prefs" class="view">
-      <div class="prefs-cols">
-        <div>
-          <h2>Liked</h2>
-          <ul id="liked-list" class="pref-list"></ul>
+    <!-- Household onboarding -->
+    <section id="household-view" class="screen" hidden>
+      <div class="card-pane">
+        <h2>Set up your household</h2>
+        <p class="hint">Create one and invite family with the join code, or join one that already exists.</p>
+
+        <div class="tabs">
+          <button class="tab active" data-onboard="create">Create</button>
+          <button class="tab" data-onboard="join">Join</button>
         </div>
-        <div>
-          <h2>Disliked</h2>
-          <ul id="disliked-list" class="pref-list"></ul>
-        </div>
+
+        <form id="create-household-form" class="onboard-form">
+          <label>Household name<input id="hh-name" required maxlength="40" placeholder="e.g. Kapoor home" /></label>
+          <label>Cook's name<input id="cook-name" maxlength="40" placeholder="e.g. Sunita didi" /></label>
+          <label>Cook's WhatsApp number
+            <div class="phone-row">
+              <select id="cook-cc">
+                <option value="+91" selected>+91</option>
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+971">+971</option>
+                <option value="+65">+65</option>
+              </select>
+              <input id="cook-phone" type="tel" inputmode="numeric" placeholder="Phone" />
+            </div>
+          </label>
+          <button type="submit">Create household</button>
+        </form>
+
+        <form id="join-household-form" class="onboard-form" hidden>
+          <label>Join code<input id="join-code" required maxlength="6" placeholder="e.g. K7M2QX" autocomplete="off" /></label>
+          <button type="submit">Join</button>
+        </form>
+
+        <p id="household-error" class="error" hidden></p>
       </div>
-      <button id="reset-prefs" class="link-btn">Reset all preferences</button>
     </section>
 
-    <section id="plan" class="view">
-      <h2>Picked for this week</h2>
-      <ul id="plan-list" class="plan-list"></ul>
-      <button id="clear-plan" class="link-btn">Clear week</button>
+    <!-- Main app -->
+    <section id="app-view" class="screen" hidden>
+      <nav class="tabs">
+        <button data-tab="swipe" class="tab active">Swipe</button>
+        <button data-tab="plan" class="tab">Plan</button>
+        <button data-tab="settings" class="tab">Settings</button>
+      </nav>
+
+      <section id="swipe" class="view active">
+        <div id="card-stack" class="card-stack" aria-live="polite"></div>
+        <div class="swipe-actions">
+          <button id="dislike-btn" class="big nope">Nope</button>
+          <button id="like-btn" class="big yum">Yum</button>
+        </div>
+        <div class="manual-entry">
+          <p class="hint">Already have something in mind?</p>
+          <form id="manual-form">
+            <input id="manual-input" type="text" placeholder="e.g. Rajma chawal" maxlength="60" autocomplete="off" />
+            <button type="submit">Add to plan</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="plan" class="view">
+        <h2>Matched this week</h2>
+        <p class="hint" id="match-hint"></p>
+        <ul id="plan-list" class="plan-list"></ul>
+        <button id="send-cook-btn" class="primary">Send to cook on WhatsApp</button>
+        <button id="reset-week-btn" class="link-btn">Start a new week (clear swipes)</button>
+      </section>
+
+      <section id="settings" class="view">
+        <h2>Family preferences</h2>
+        <p class="hint">These filter what shows up for everyone.</p>
+        <form id="filters-form" class="filters">
+          <label>Diet
+            <select id="f-diet">
+              <option value="any">Any</option>
+              <option value="veg">Vegetarian</option>
+              <option value="egg">Veg + egg</option>
+              <option value="non-veg">Non-vegetarian</option>
+              <option value="jain">Jain</option>
+            </select>
+          </label>
+          <fieldset>
+            <legend>Skip these cuisines</legend>
+            <div id="region-toggles" class="chips"></div>
+          </fieldset>
+          <label>Skip ingredients (comma-separated)
+            <input id="f-excluded" placeholder="e.g. mushroom, brinjal, peanuts" />
+          </label>
+          <label>Max spice
+            <select id="f-spice"><option value="1">Mild</option><option value="2">Medium</option><option value="3" selected>Spicy</option></select>
+          </label>
+          <label>Max effort
+            <select id="f-effort"><option value="1">Quick (under 30min)</option><option value="2">Medium</option><option value="3" selected>Anything</option></select>
+          </label>
+          <button type="submit">Save</button>
+          <span id="filters-saved" class="saved" hidden>Saved</span>
+        </form>
+
+        <h3>Cook</h3>
+        <form id="cook-form" class="filters">
+          <label>Name<input id="s-cook-name" maxlength="40" /></label>
+          <label>WhatsApp number
+            <div class="phone-row">
+              <select id="s-cook-cc">
+                <option value="+91" selected>+91</option>
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+971">+971</option>
+                <option value="+65">+65</option>
+              </select>
+              <input id="s-cook-phone" type="tel" inputmode="numeric" />
+            </div>
+          </label>
+          <button type="submit">Save cook</button>
+          <span id="cook-saved" class="saved" hidden>Saved</span>
+        </form>
+
+        <h3>Members</h3>
+        <ul id="members-list" class="plan-list"></ul>
+        <p class="hint">Join code: <span id="join-code-display" class="code"></span></p>
+
+        <h3>Your tastes</h3>
+        <p class="hint">Personal layer on top of family filters.</p>
+        <div class="prefs-cols">
+          <div><h4>Liked</h4><ul id="liked-list" class="pref-list"></ul></div>
+          <div><h4>Disliked</h4><ul id="disliked-list" class="pref-list"></ul></div>
+        </div>
+      </section>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

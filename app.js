@@ -1,228 +1,491 @@
-const SEED_DISHES = [
-  { name: "Rajma chawal", tags: ["north indian", "comfort"] },
-  { name: "Masala dosa", tags: ["south indian"] },
-  { name: "Paneer butter masala", tags: ["north indian", "rich"] },
-  { name: "Chole bhature", tags: ["north indian", "heavy"] },
-  { name: "Khichdi", tags: ["light", "one pot"] },
-  { name: "Pav bhaji", tags: ["street", "veg"] },
-  { name: "Aloo paratha", tags: ["breakfast"] },
-  { name: "Veg pulao", tags: ["one pot"] },
-  { name: "Dal tadka & jeera rice", tags: ["everyday"] },
-  { name: "Bisi bele bath", tags: ["south indian", "one pot"] },
-  { name: "Thepla & chai", tags: ["gujarati", "light"] },
-  { name: "Egg curry & roti", tags: ["protein"] },
-  { name: "Hakka noodles", tags: ["indo chinese"] },
-  { name: "Vegetable biryani", tags: ["festive"] },
-  { name: "Curd rice & pickle", tags: ["light", "south indian"] },
-  { name: "Palak paneer", tags: ["greens"] },
-  { name: "Methi thepla", tags: ["gujarati"] },
-  { name: "Bhindi masala & roti", tags: ["everyday"] },
-  { name: "Lemon rice", tags: ["light", "south indian"] },
-  { name: "Sambar rice", tags: ["south indian"] },
-];
+import { auth, db } from "./firebase-config.js";
+import {
+  RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import {
+  doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs,
+  onSnapshot, serverTimestamp, arrayUnion, runTransaction, writeBatch,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { DISHES, ALL_REGIONS, DEFAULT_FILTERS, dishesForFilters } from "./dishes.js";
 
-const STORE_KEY = "meal-swipe-state-v1";
+const $ = (id) => document.getElementById(id);
+const show = (el) => el && (el.hidden = false);
+const hide = (el) => el && (el.hidden = true);
 
-const defaultState = () => ({
-  liked: [],
-  disliked: [],
-  plan: [],
-  seen: [],
-  customAdded: [],
+const local = {
+  liked: JSON.parse(localStorage.getItem("liked") || "[]"),
+  disliked: JSON.parse(localStorage.getItem("disliked") || "[]"),
+};
+const saveLocal = () => {
+  localStorage.setItem("liked", JSON.stringify(local.liked));
+  localStorage.setItem("disliked", JSON.stringify(local.disliked));
+};
+
+let currentUser = null;
+let currentHousehold = null;        // { id, ...data }
+let unsubHousehold = null;
+let unsubSwipes = null;
+let allSwipes = [];                 // [{ userId, dishId, vote }]
+let confirmationResult = null;
+let recaptcha = null;
+
+// ---------- Auth ----------
+
+function setupRecaptcha() {
+  if (recaptcha) return recaptcha;
+  recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+  return recaptcha;
+}
+
+$("phone-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hide($("auth-error"));
+  const cc = $("cc").value;
+  const phone = $("phone").value.replace(/\D/g, "");
+  if (!phone) return;
+  $("send-otp-btn").disabled = true;
+  try {
+    const verifier = setupRecaptcha();
+    confirmationResult = await signInWithPhoneNumber(auth, cc + phone, verifier);
+    hide($("phone-form"));
+    show($("otp-form"));
+    $("otp").focus();
+  } catch (err) {
+    showError("auth-error", err.message || "Could not send OTP");
+    try { recaptcha?.clear(); } catch {} recaptcha = null;
+  } finally {
+    $("send-otp-btn").disabled = false;
+  }
 });
 
-function load() {
+$("otp-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hide($("auth-error"));
+  const code = $("otp").value.trim();
+  if (!code || !confirmationResult) return;
   try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return defaultState();
-    return { ...defaultState(), ...JSON.parse(raw) };
-  } catch {
-    return defaultState();
+    await confirmationResult.confirm(code);
+  } catch (err) {
+    showError("auth-error", "Wrong code, try again");
+  }
+});
+
+$("otp-back").addEventListener("click", () => {
+  hide($("otp-form"));
+  show($("phone-form"));
+  $("otp").value = "";
+});
+
+$("signout-btn").addEventListener("click", async () => {
+  await signOut(auth);
+  location.reload();
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { showAuth(); return; }
+  currentUser = user;
+  await ensureUserDoc(user);
+  await routeAfterAuth();
+});
+
+async function ensureUserDoc(user) {
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, { phone: user.phoneNumber, createdAt: serverTimestamp() });
   }
 }
 
-function save() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+// ---------- Household routing ----------
+
+async function routeAfterAuth() {
+  const q = query(collection(db, "households"), where("members", "array-contains", currentUser.uid));
+  const snap = await getDocs(q);
+  if (snap.empty) { showHouseholdOnboarding(); return; }
+  const hhDoc = snap.docs[0];
+  attachHousehold(hhDoc.id);
 }
 
-let state = load();
+function attachHousehold(hid) {
+  if (unsubHousehold) unsubHousehold();
+  if (unsubSwipes) unsubSwipes();
+  unsubHousehold = onSnapshot(doc(db, "households", hid), (snap) => {
+    if (!snap.exists()) return;
+    currentHousehold = { id: snap.id, ...snap.data() };
+    showApp();
+    renderAll();
+  });
+  unsubSwipes = onSnapshot(collection(db, "households", hid, "swipes"), (snap) => {
+    allSwipes = snap.docs.map((d) => d.data());
+    if (currentHousehold) renderAll();
+  });
+}
 
-function candidatePool() {
-  const customDishes = state.customAdded.map((name) => ({ name, tags: ["yours"] }));
-  const all = [...SEED_DISHES, ...customDishes];
-  return all.filter(
-    (d) =>
-      !state.liked.includes(d.name) &&
-      !state.disliked.includes(d.name) &&
-      !state.seen.includes(d.name)
+// ---------- Onboarding (create / join) ----------
+
+document.querySelectorAll("#household-view [data-onboard]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#household-view [data-onboard]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    const which = btn.dataset.onboard;
+    $("create-household-form").hidden = which !== "create";
+    $("join-household-form").hidden = which !== "join";
+  });
+});
+
+$("create-household-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hide($("household-error"));
+  const name = $("hh-name").value.trim();
+  const cookName = $("cook-name").value.trim();
+  const cookPhone = digitsWithCC($("cook-cc").value, $("cook-phone").value);
+  if (!name) return;
+  try {
+    const hid = await createHousehold({ name, cookName, cookPhone });
+    attachHousehold(hid);
+  } catch (err) {
+    showError("household-error", err.message || "Could not create");
+  }
+});
+
+$("join-household-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hide($("household-error"));
+  const code = $("join-code").value.trim().toUpperCase();
+  if (!code) return;
+  try {
+    const hid = await joinHousehold(code);
+    attachHousehold(hid);
+  } catch (err) {
+    showError("household-error", err.message || "Could not join");
+  }
+});
+
+async function createHousehold({ name, cookName, cookPhone }) {
+  const code = generateJoinCode();
+  const hhRef = doc(collection(db, "households"));
+  await runTransaction(db, async (tx) => {
+    const codeRef = doc(db, "joinIndex", code);
+    const codeSnap = await tx.get(codeRef);
+    if (codeSnap.exists()) throw new Error("Code collision, try again");
+    tx.set(hhRef, {
+      name, joinCode: code, cookName, cookPhone,
+      ownerId: currentUser.uid,
+      members: [currentUser.uid],
+      memberNames: { [currentUser.uid]: currentUser.phoneNumber || "You" },
+      filters: DEFAULT_FILTERS,
+      createdAt: serverTimestamp(),
+    });
+    tx.set(codeRef, { householdId: hhRef.id });
+  });
+  return hhRef.id;
+}
+
+async function joinHousehold(code) {
+  const codeRef = doc(db, "joinIndex", code);
+  const codeSnap = await getDoc(codeRef);
+  if (!codeSnap.exists()) throw new Error("No household with that code");
+  const hid = codeSnap.data().householdId;
+  await updateDoc(doc(db, "households", hid), {
+    members: arrayUnion(currentUser.uid),
+    [`memberNames.${currentUser.uid}`]: currentUser.phoneNumber || "Member",
+  });
+  return hid;
+}
+
+function generateJoinCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+  let out = "";
+  for (let i = 0; i < 6; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return out;
+}
+
+// ---------- Top-level view switching ----------
+
+function showAuth() {
+  show($("auth-view")); hide($("household-view")); hide($("app-view"));
+  hide($("topbar-right"));
+}
+function showHouseholdOnboarding() {
+  hide($("auth-view")); show($("household-view")); hide($("app-view"));
+  hide($("topbar-right"));
+}
+function showApp() {
+  hide($("auth-view")); hide($("household-view")); show($("app-view"));
+  show($("topbar-right"));
+  $("household-pill").textContent = currentHousehold.name;
+}
+
+document.querySelectorAll("#app-view nav .tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#app-view nav .tab").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll("#app-view .view").forEach((v) => v.classList.remove("active"));
+    btn.classList.add("active");
+    $(btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ---------- Render ----------
+
+function renderAll() {
+  renderCard();
+  renderPlan();
+  renderSettings();
+  renderTastes();
+  renderMembers();
+}
+
+function userSwipes(userId) {
+  return allSwipes.filter((s) => s.userId === userId);
+}
+
+function dishCandidates() {
+  const filters = currentHousehold.filters || DEFAULT_FILTERS;
+  const pool = dishesForFilters(filters).concat(
+    (currentHousehold.customDishes || []).map((name) => ({
+      id: "custom-" + slugify(name), name, region: "everyday",
+      diet: "veg", meals: ["lunch","dinner"], spice: 1, effort: 1, heaviness: 2, ingredients: [],
+    }))
+  );
+  const myVotes = new Set(userSwipes(currentUser.uid).map((s) => s.dishId));
+  return pool.filter(
+    (d) => !myVotes.has(d.id) && !local.liked.includes(d.name) && !local.disliked.includes(d.name)
   );
 }
 
-function currentCard() {
-  const pool = candidatePool();
-  return pool[0] || null;
-}
-
 function renderCard() {
-  const stack = document.getElementById("card-stack");
+  const stack = $("card-stack");
   stack.innerHTML = "";
-  const dish = currentCard();
-  if (!dish) {
+  const next = dishCandidates()[0];
+  if (!next) {
     const empty = document.createElement("div");
     empty.className = "card empty";
-    empty.innerHTML =
-      "<div><p>You're out of suggestions for now.</p><p style='font-size:13px'>Reset preferences or add your own below.</p></div>";
+    empty.innerHTML = "<div><p>You're caught up.</p><p style='font-size:13px'>Wait for others, or loosen filters in Settings.</p></div>";
     stack.appendChild(empty);
     return;
   }
   const card = document.createElement("div");
   card.className = "card";
-  card.dataset.name = dish.name;
-  const tags = (dish.tags || []).map((t) => `<span class="tag">${t}</span>`).join(" ");
-  card.innerHTML = `
-    <div class="dish">${dish.name}</div>
-    <div class="meta">${tags}</div>
-  `;
+  card.dataset.id = next.id;
+  const tags = [
+    next.region, next.diet,
+    next.spice === 3 ? "spicy" : next.spice === 1 ? "mild" : "med",
+    next.effort === 1 ? "quick" : next.effort === 3 ? "elaborate" : "med effort",
+  ].map((t) => `<span class="tag">${t}</span>`).join(" ");
+  card.innerHTML = `<div class="dish">${escapeHtml(next.name)}</div><div class="meta">${tags}</div>`;
   stack.appendChild(card);
 }
 
-function swipe(direction) {
-  const dish = currentCard();
-  if (!dish) return;
-  const card = document.querySelector(".card[data-name]");
-  if (card) card.classList.add(direction === "like" ? "swipe-right" : "swipe-left");
+$("like-btn").addEventListener("click", () => swipe("like"));
+$("dislike-btn").addEventListener("click", () => swipe("dislike"));
 
-  if (direction === "like") {
-    state.liked.push(dish.name);
-    state.plan.push(dish.name);
-  } else {
-    state.disliked.push(dish.name);
-  }
-  state.seen.push(dish.name);
-  save();
-  setTimeout(() => {
-    renderCard();
-    renderPrefs();
-    renderPlan();
-  }, 220);
+async function swipe(vote) {
+  const dish = dishCandidates()[0];
+  if (!dish || !currentHousehold) return;
+  const card = document.querySelector(".card[data-id]");
+  if (card) card.classList.add(vote === "like" ? "swipe-right" : "swipe-left");
+  if (vote === "like" && !local.liked.includes(dish.name)) local.liked.push(dish.name);
+  if (vote === "dislike" && !local.disliked.includes(dish.name)) local.disliked.push(dish.name);
+  saveLocal();
+  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${currentUser.uid}_${dish.id}`), {
+    userId: currentUser.uid, dishId: dish.id, dishName: dish.name, vote, at: serverTimestamp(),
+  });
+  setTimeout(renderCard, 220);
 }
 
-function renderPrefs() {
-  const liked = document.getElementById("liked-list");
-  const disliked = document.getElementById("disliked-list");
-  liked.innerHTML = "";
-  disliked.innerHTML = "";
+$("manual-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("manual-input");
+  const name = input.value.trim();
+  if (!name || !currentHousehold) return;
+  await updateDoc(doc(db, "households", currentHousehold.id), {
+    customDishes: arrayUnion(name),
+  });
+  // count it as a like for the current user so it lands in plan if everyone agrees
+  const dishId = "custom-" + slugify(name);
+  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${currentUser.uid}_${dishId}`), {
+    userId: currentUser.uid, dishId, dishName: name, vote: "like", at: serverTimestamp(),
+  });
+  input.value = "";
+});
 
-  const fill = (ul, items, kind) => {
-    if (items.length === 0) {
-      const li = document.createElement("li");
-      li.className = "empty";
-      li.textContent = kind === "liked" ? "Nothing yet" : "Nothing yet";
-      ul.appendChild(li);
-      return;
-    }
-    items.forEach((name) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${name}</span><button title="Remove" data-name="${name}" data-kind="${kind}">×</button>`;
-      ul.appendChild(li);
-    });
-  };
-
-  fill(liked, state.liked, "liked");
-  fill(disliked, state.disliked, "disliked");
+function matchedDishes() {
+  if (!currentHousehold) return [];
+  const memberCount = currentHousehold.members.length;
+  const byDish = new Map();
+  for (const s of allSwipes) {
+    if (!byDish.has(s.dishId)) byDish.set(s.dishId, { name: s.dishName, likes: new Set(), dislikes: new Set() });
+    const e = byDish.get(s.dishId);
+    if (s.vote === "like") e.likes.add(s.userId);
+    else e.dislikes.add(s.userId);
+  }
+  const out = [];
+  for (const [dishId, e] of byDish.entries()) {
+    if (e.dislikes.size > 0) continue;
+    if (e.likes.size === memberCount) out.push({ dishId, name: e.name });
+  }
+  return out;
 }
 
 function renderPlan() {
-  const ul = document.getElementById("plan-list");
+  const ul = $("plan-list");
   ul.innerHTML = "";
-  if (state.plan.length === 0) {
+  const matched = matchedDishes();
+  const memberCount = currentHousehold.members.length;
+  $("match-hint").textContent = memberCount > 1
+    ? `A dish matches when all ${memberCount} members swipe yum.`
+    : "Invite others with the join code in Settings to make matches happen.";
+  if (matched.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = "No meals picked yet — start swiping.";
+    li.textContent = "No matches yet.";
     ul.appendChild(li);
+    $("send-cook-btn").disabled = true;
     return;
   }
-  state.plan.forEach((name, i) => {
+  matched.forEach(({ name }) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${name}</span><button title="Remove" data-idx="${i}">×</button>`;
+    li.innerHTML = `<span>${escapeHtml(name)}</span>`;
+    ul.appendChild(li);
+  });
+  $("send-cook-btn").disabled = !currentHousehold.cookPhone;
+}
+
+$("send-cook-btn").addEventListener("click", () => {
+  const matched = matchedDishes();
+  if (!matched.length || !currentHousehold.cookPhone) return;
+  const lines = matched.map((d, i) => `${i + 1}. ${d.name}`).join("\n");
+  const cookName = currentHousehold.cookName || "ji";
+  const family = currentHousehold.name;
+  const msg = `Namaste ${cookName} 🙏\nThis week's plan from the ${family} family:\n\n${lines}\n\nAnything missing in groceries? Reply here.`;
+  const phone = (currentHousehold.cookPhone || "").replace(/\D/g, "");
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+});
+
+$("reset-week-btn").addEventListener("click", async () => {
+  if (!confirm("Clear everyone's swipes and start a fresh week?")) return;
+  const snap = await getDocs(collection(db, "households", currentHousehold.id, "swipes"));
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+});
+
+// ---------- Settings: filters, cook, regions ----------
+
+function renderSettings() {
+  if (!currentHousehold) return;
+  const f = currentHousehold.filters || DEFAULT_FILTERS;
+  $("f-diet").value = f.diet || "any";
+  $("f-spice").value = String(f.maxSpice ?? 3);
+  $("f-effort").value = String(f.maxEffort ?? 3);
+  $("f-excluded").value = (f.excludedIngredients || []).join(", ");
+
+  const regWrap = $("region-toggles");
+  regWrap.innerHTML = "";
+  const excluded = new Set(f.excludedRegions || []);
+  ALL_REGIONS.forEach(([key, label]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (excluded.has(key) ? " on" : "");
+    b.textContent = label;
+    b.addEventListener("click", () => {
+      b.classList.toggle("on");
+    });
+    b.dataset.region = key;
+    regWrap.appendChild(b);
+  });
+
+  $("s-cook-name").value = currentHousehold.cookName || "";
+  const cp = currentHousehold.cookPhone || "";
+  const m = cp.match(/^(\+\d{1,3})(.*)$/);
+  if (m) { $("s-cook-cc").value = m[1]; $("s-cook-phone").value = m[2]; }
+  else { $("s-cook-phone").value = cp.replace(/\D/g, ""); }
+
+  $("join-code-display").textContent = currentHousehold.joinCode || "";
+}
+
+$("filters-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const excludedRegions = [...document.querySelectorAll("#region-toggles .chip.on")].map((b) => b.dataset.region);
+  const excludedIngredients = $("f-excluded").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const filters = {
+    diet: $("f-diet").value,
+    excludedRegions,
+    excludedIngredients,
+    maxSpice: Number($("f-spice").value),
+    maxEffort: Number($("f-effort").value),
+  };
+  await updateDoc(doc(db, "households", currentHousehold.id), { filters });
+  flash("filters-saved");
+});
+
+$("cook-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const cookName = $("s-cook-name").value.trim();
+  const cookPhone = digitsWithCC($("s-cook-cc").value, $("s-cook-phone").value);
+  await updateDoc(doc(db, "households", currentHousehold.id), { cookName, cookPhone });
+  flash("cook-saved");
+});
+
+// ---------- Tastes (personal, localStorage) ----------
+
+function renderTastes() {
+  const fill = (ulId, items, kind) => {
+    const ul = $(ulId);
+    ul.innerHTML = "";
+    if (items.length === 0) {
+      const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nothing yet";
+      ul.appendChild(li); return;
+    }
+    items.forEach((name) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${escapeHtml(name)}</span><button data-name="${escapeHtml(name)}" data-kind="${kind}">×</button>`;
+      ul.appendChild(li);
+    });
+  };
+  fill("liked-list", local.liked, "liked");
+  fill("disliked-list", local.disliked, "disliked");
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".pref-list button[data-name]");
+  if (!btn) return;
+  const { name, kind } = btn.dataset;
+  local[kind] = local[kind].filter((n) => n !== name);
+  saveLocal();
+  renderTastes();
+  renderCard();
+});
+
+// ---------- Members ----------
+
+function renderMembers() {
+  const ul = $("members-list"); ul.innerHTML = "";
+  const names = currentHousehold.memberNames || {};
+  currentHousehold.members.forEach((uid) => {
+    const li = document.createElement("li");
+    const me = uid === currentUser.uid ? " (you)" : "";
+    const owner = uid === currentHousehold.ownerId ? " · owner" : "";
+    li.innerHTML = `<span>${escapeHtml(names[uid] || uid.slice(0, 6))}${me}${owner}</span>`;
     ul.appendChild(li);
   });
 }
 
-function bind() {
-  document.getElementById("like-btn").addEventListener("click", () => swipe("like"));
-  document.getElementById("dislike-btn").addEventListener("click", () => swipe("dislike"));
+// ---------- Helpers ----------
 
-  document.querySelectorAll(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.tab).classList.add("active");
-    });
-  });
-
-  document.getElementById("manual-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const input = document.getElementById("manual-input");
-    const name = input.value.trim();
-    if (!name) return;
-    if (!state.customAdded.includes(name)) state.customAdded.push(name);
-    if (!state.plan.includes(name)) state.plan.push(name);
-    input.value = "";
-    save();
-    renderPlan();
-    flashTab("plan");
-  });
-
-  document.getElementById("liked-list").addEventListener("click", onPrefRemove);
-  document.getElementById("disliked-list").addEventListener("click", onPrefRemove);
-
-  document.getElementById("plan-list").addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-idx]");
-    if (!btn) return;
-    state.plan.splice(Number(btn.dataset.idx), 1);
-    save();
-    renderPlan();
-  });
-
-  document.getElementById("reset-prefs").addEventListener("click", () => {
-    state.liked = [];
-    state.disliked = [];
-    state.seen = [];
-    save();
-    renderPrefs();
-    renderCard();
-  });
-
-  document.getElementById("clear-plan").addEventListener("click", () => {
-    state.plan = [];
-    save();
-    renderPlan();
-  });
+function showError(id, msg) {
+  const el = $(id); el.textContent = msg; show(el);
 }
-
-function onPrefRemove(e) {
-  const btn = e.target.closest("button[data-name]");
-  if (!btn) return;
-  const { name, kind } = btn.dataset;
-  state[kind] = state[kind].filter((n) => n !== name);
-  state.seen = state.seen.filter((n) => n !== name);
-  save();
-  renderPrefs();
-  renderCard();
+function flash(id) {
+  const el = $(id); show(el); setTimeout(() => hide(el), 1500);
 }
-
-function flashTab(name) {
-  const btn = document.querySelector(`.tab[data-tab="${name}"]`);
-  if (!btn) return;
-  btn.animate(
-    [{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1)" }],
-    { duration: 280 }
-  );
+function digitsWithCC(cc, raw) {
+  const d = (raw || "").replace(/\D/g, "");
+  return d ? cc + d : "";
 }
-
-bind();
-renderCard();
-renderPrefs();
-renderPlan();
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
