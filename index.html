@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meal Swipe</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Meal Swipe</h1>
+    <nav>
+      <button data-tab="swipe" class="tab active">Swipe</button>
+      <button data-tab="prefs" class="tab">Likes &amp; Dislikes</button>
+      <button data-tab="plan" class="tab">This Week</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="swipe" class="view active">
+      <div id="card-stack" class="card-stack" aria-live="polite"></div>
+      <div class="swipe-actions">
+        <button id="dislike-btn" class="big nope" aria-label="Dislike">Nope</button>
+        <button id="like-btn" class="big yum" aria-label="Like">Yum</button>
+      </div>
+
+      <div class="manual-entry">
+        <p class="hint">Already have something in mind?</p>
+        <form id="manual-form">
+          <input id="manual-input" type="text" placeholder="e.g. Rajma chawal" maxlength="60" autocomplete="off" />
+          <button type="submit">Add to plan</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="prefs" class="view">
+      <div class="prefs-cols">
+        <div>
+          <h2>Liked</h2>
+          <ul id="liked-list" class="pref-list"></ul>
+        </div>
+        <div>
+          <h2>Disliked</h2>
+          <ul id="disliked-list" class="pref-list"></ul>
+        </div>
+      </div>
+      <button id="reset-prefs" class="link-btn">Reset all preferences</button>
+    </section>
+
+    <section id="plan" class="view">
+      <h2>Picked for this week</h2>
+      <ul id="plan-list" class="plan-list"></ul>
+      <button id="clear-plan" class="link-btn">Clear week</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
