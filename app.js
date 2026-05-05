@@ -293,21 +293,40 @@ async function swipe(vote) {
   setTimeout(renderCard, 220);
 }
 
-$("manual-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+$("add-to-deck-btn").addEventListener("click", async () => {
   const input = $("manual-input");
   const name = input.value.trim();
   if (!name || !currentHousehold) return;
   await updateDoc(doc(db, "households", currentHousehold.id), {
     customDishes: arrayUnion(name),
   });
-  // count it as a like for the current user so it lands in plan if everyone agrees
-  const dishId = "custom-" + slugify(name);
-  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${currentUser.uid}_${dishId}`), {
-    userId: currentUser.uid, dishId, dishName: name, vote: "like", at: serverTimestamp(),
+  input.value = "";
+  flashHint("Added to everyone's cards");
+});
+
+$("manual-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("manual-input");
+  const name = input.value.trim();
+  if (!name || !currentHousehold) return;
+  await updateDoc(doc(db, "households", currentHousehold.id), {
+    todaySuggestions: arrayUnion({
+      name,
+      byUid: currentUser.uid,
+      byName: currentHousehold.memberNames?.[currentUser.uid] || "Member",
+      at: Date.now(),
+    }),
   });
   input.value = "";
+  flashHint("Suggested for today — open Plan to send to cook");
 });
+
+function flashHint(msg) {
+  const el = $("manual-explainer");
+  const original = el.textContent;
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = original; }, 2200);
+}
 
 function matchedDishes() {
   if (!currentHousehold) return [];
@@ -331,43 +350,73 @@ function renderPlan() {
   const ul = $("plan-list");
   ul.innerHTML = "";
   const matched = matchedDishes();
+  const today = currentHousehold.todaySuggestions || [];
   const memberCount = currentHousehold.members.length;
   $("match-hint").textContent = memberCount > 1
-    ? `A dish matches when all ${memberCount} members swipe yum.`
+    ? `A dish matches when all ${memberCount} members swipe yum. "Today" suggestions skip the vote.`
     : "Invite others with the join code in Settings to make matches happen.";
-  if (matched.length === 0) {
+
+  today.forEach((s, i) => {
     const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No matches yet.";
-    ul.appendChild(li);
-    $("send-cook-btn").disabled = true;
-    return;
-  }
-  matched.forEach(({ name }) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${escapeHtml(name)}</span>`;
+    li.innerHTML = `<span>${escapeHtml(s.name)} <span class="tag">today · ${escapeHtml(s.byName || "member")}</span></span>` +
+      `<button data-today-idx="${i}" title="Remove">×</button>`;
     ul.appendChild(li);
   });
-  $("send-cook-btn").disabled = !currentHousehold.cookPhone;
+
+  matched.forEach(({ name }) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${escapeHtml(name)} <span class="tag">matched</span></span>`;
+    ul.appendChild(li);
+  });
+
+  if (matched.length === 0 && today.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No matches or suggestions yet.";
+    ul.appendChild(li);
+  }
+
+  $("send-cook-btn").disabled =
+    !currentHousehold.cookPhone || (matched.length === 0 && today.length === 0);
 }
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-today-idx]");
+  if (!btn || !currentHousehold) return;
+  const idx = Number(btn.dataset.todayIdx);
+  const next = (currentHousehold.todaySuggestions || []).filter((_, i) => i !== idx);
+  await updateDoc(doc(db, "households", currentHousehold.id), { todaySuggestions: next });
+});
 
 $("send-cook-btn").addEventListener("click", () => {
   const matched = matchedDishes();
-  if (!matched.length || !currentHousehold.cookPhone) return;
-  const lines = matched.map((d, i) => `${i + 1}. ${d.name}`).join("\n");
+  const today = currentHousehold.todaySuggestions || [];
+  if ((!matched.length && !today.length) || !currentHousehold.cookPhone) return;
   const cookName = currentHousehold.cookName || "ji";
   const family = currentHousehold.name;
-  const msg = `Namaste ${cookName} 🙏\nThis week's plan from the ${family} family:\n\n${lines}\n\nAnything missing in groceries? Reply here.`;
+  const parts = [`Namaste ${cookName} 🙏`, `From the ${family} family:`, ""];
+  if (today.length) {
+    parts.push("For today:");
+    today.forEach((s, i) => parts.push(`${i + 1}. ${s.name}`));
+    parts.push("");
+  }
+  if (matched.length) {
+    parts.push("This week's matches:");
+    matched.forEach((d, i) => parts.push(`${i + 1}. ${d.name}`));
+    parts.push("");
+  }
+  parts.push("Anything missing in groceries? Reply here.");
   const phone = (currentHousehold.cookPhone || "").replace(/\D/g, "");
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(parts.join("\n"))}`, "_blank");
 });
 
 $("reset-week-btn").addEventListener("click", async () => {
-  if (!confirm("Clear everyone's swipes and start a fresh week?")) return;
+  if (!confirm("Clear everyone's swipes and today's suggestions, and start fresh?")) return;
   const snap = await getDocs(collection(db, "households", currentHousehold.id, "swipes"));
   const batch = writeBatch(db);
   snap.docs.forEach((d) => batch.delete(d.ref));
   await batch.commit();
+  await updateDoc(doc(db, "households", currentHousehold.id), { todaySuggestions: [] });
 });
 
 // ---------- Settings: filters, cook, regions ----------

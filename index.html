@@ -102,7 +102,11 @@
           <p class="hint">Already have something in mind?</p>
           <form id="manual-form">
             <input id="manual-input" type="text" placeholder="e.g. Rajma chawal" maxlength="60" autocomplete="off" />
-            <button type="submit">Add to plan</button>
+            <div class="manual-actions">
+              <button type="button" id="add-to-deck-btn">Add to cards</button>
+              <button type="submit" id="suggest-today-btn" class="primary">Suggest for today</button>
+            </div>
+            <p class="hint" id="manual-explainer">Cards: everyone swipes on it. Today: skips the vote, goes straight to the cook.</p>
           </form>
         </div>
       </section>

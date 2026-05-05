@@ -122,8 +122,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .yum { background: var(--good); color: #fff; }
 
 .manual-entry { border-top: 1px dashed var(--line); padding-top: 16px; }
-#manual-form { flex-direction: row; }
-#manual-input { flex: 1; }
+.manual-actions { display: flex; gap: 8px; }
+.manual-actions button { flex: 1; }
+#manual-explainer { margin-top: 6px; }
 
 .prefs-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pref-list, .plan-list { list-style: none; padding: 0; margin: 0; }
