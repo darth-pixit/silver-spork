@@ -254,6 +254,13 @@ button:disabled {
   filter: grayscale(0.4);
 }
 
+button.is-rebound { animation: btn-rebound var(--d-rebound) var(--ease-snap); }
+@keyframes btn-rebound {
+  0%   { transform: translateY(2px); }
+  45%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
 /* Tomato primary cap */
 button.primary, button.yum, button#suggest-today-btn {
   --cap-top:  #E55A4B;

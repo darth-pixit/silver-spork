@@ -125,8 +125,9 @@
 
   // ---------------- Keycap press ripple ----------------
   // Adds a tiny bounce-back overshoot to any [data-keycap] on click.
+  const KEYCAP_SELECTOR = '[data-keycap], button:not(.link-btn):not(.chip):not(.seg):not(.tab):not(.onboard-card):not(.pref-list button):not(.plan-list button)';
   document.addEventListener("pointerdown", (e) => {
-    const k = e.target.closest && e.target.closest('[data-keycap]');
+    const k = e.target.closest && e.target.closest(KEYCAP_SELECTOR);
     if (!k) return;
     k.classList.add("is-pressing");
   });
