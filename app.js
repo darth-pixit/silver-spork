@@ -58,7 +58,18 @@ const SUGGESTION_RETENTION_DAYS = 2;
     localStorage.removeItem("householdId");
   }
   showOnboarding();
+  applyJoinLink();
 })();
+
+function applyJoinLink() {
+  const params = new URLSearchParams(window.location.search);
+  const code = (params.get("join") || "").trim().toUpperCase();
+  if (!code) return;
+  const joinTab = document.querySelector('#household-view [data-onboard="join"]');
+  if (joinTab) joinTab.click();
+  const input = $("join-code");
+  if (input) input.value = code;
+}
 
 function attachHousehold(hid) {
   if (unsubHousehold) unsubHousehold();
@@ -594,6 +605,73 @@ $("me-form").addEventListener("submit", async (e) => {
     [`memberNames.${userId}`]: displayName,
   });
   flash("me-saved");
+});
+
+// ---------- Share invite ----------
+
+function inviteLink(code) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("join", code);
+  return url.toString();
+}
+
+function inviteText(code, link) {
+  const family = currentHousehold?.name || "our";
+  return `Join the ${family} family on Meal Swipe.\nCode: ${code}\n${link}`;
+}
+
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function flashShareSaved(label) {
+  const el = $("share-saved");
+  if (!el) return;
+  el.textContent = label;
+  show(el);
+  setTimeout(() => hide(el), 1500);
+}
+
+$("share-join-btn").addEventListener("click", async () => {
+  const code = currentHousehold?.joinCode;
+  if (!code) return;
+  const link = inviteLink(code);
+  const text = inviteText(code, link);
+  const family = currentHousehold?.name || "our family";
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `Join ${family} on Meal Swipe`, text, url: link });
+      return;
+    } catch {}
+  }
+  if (await copyToClipboard(text)) flashShareSaved("Copied invite");
+});
+
+$("copy-join-link-btn").addEventListener("click", async () => {
+  const code = currentHousehold?.joinCode;
+  if (!code) return;
+  if (await copyToClipboard(inviteLink(code))) flashShareSaved("Copied link");
 });
 
 // ---------- Tastes ----------

@@ -161,7 +161,14 @@
 
         <h3>Members</h3>
         <ul id="members-list" class="plan-list"></ul>
-        <p class="hint">Join code: <span id="join-code-display" class="code"></span></p>
+        <div class="join-share">
+          <p class="hint">Join code: <span id="join-code-display" class="code"></span></p>
+          <div class="join-share-actions">
+            <button type="button" id="share-join-btn">Share invite</button>
+            <button type="button" id="copy-join-link-btn" class="link-btn">Copy link</button>
+            <span id="share-saved" class="saved" hidden>Copied</span>
+          </div>
+        </div>
 
         <h3>Your tastes</h3>
         <p class="hint">Personal layer on top of family filters.</p>
