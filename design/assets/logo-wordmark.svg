@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" fill="none">
+  <g stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 12 44 A 20 20 0 0 1 52 44"></path>
+    <path d="M 32 44 L 44 28"></path>
+    <path d="M 44 28 Q 50 24 52 18 Q 46 20 44 28 Z" fill="currentColor" stroke="none"></path>
+  </g>
+  <text x="76" y="44" font-family="IBM Plex Sans, -apple-system, sans-serif" font-size="30" font-weight="600" letter-spacing="-0.5" fill="currentColor">Fleetr</text>
+</svg>

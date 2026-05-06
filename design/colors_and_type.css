@@ -1,202 +1,241 @@
-/* =========================================================
-   Spork Design System — Color & Type tokens
-   ========================================================= */
+/* ==========================================================================
+   Meal Swipe — Design Tokens (Fleetr design system)
+   Warm-minimalist palette, humanist type, generous spacing.
+   Light + dark themes side-by-side.
+   ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
+/* Variable Noto Sans — single file covers all weights and condensed widths */
 @font-face {
-  font-family: "Noto Sans";
-  src: url("fonts/NotoSans-VariableFont_wdth_wght.ttf") format("truetype-variations");
+  font-family: 'Noto Sans';
+  src: url('fonts/NotoSans-VariableFont_wdth_wght.ttf') format('truetype-variations');
   font-weight: 100 900;
   font-stretch: 75% 125%;
   font-style: normal;
   font-display: swap;
 }
-
-:root {
-  /* ---------- Color: brand anchors ---------- */
-  --tomato:     #D63B2C;
-  --tomato-dk:  #B12C20;
-  --tomato-lt:  #ED6353;
-  --mustard:    #E8A53A;
-  --mustard-dk: #C2862A;
-  --mustard-lt: #F5C36C;
-  --cream:      #F5EFE2;
-  --cream-dk:   #ECE3D0;
-  --cream-lt:   #FAF6EC;
-
-  /* ---------- Color: ink scale ---------- */
-  --ink:        #1B1814;   /* primary text, hard edges */
-  --charcoal:   #2E2A24;   /* secondary text, keycap sidewalls */
-  --pepper:     #5C5249;   /* tertiary text, dividers */
-  --ash:        #8B8278;   /* placeholder, hint */
-  --bone:       #C9C0B2;   /* hairline */
-
-  /* ---------- Color: semantic ---------- */
-  --bg:         var(--cream);
-  --bg-alt:     var(--cream-dk);
-  --bg-paper:   var(--cream-lt);
-  --fg:         var(--ink);
-  --fg-2:       var(--charcoal);
-  --fg-3:       var(--pepper);
-  --fg-4:       var(--ash);
-  --hairline:   rgba(27, 24, 20, 0.08);
-  --hairline-2: rgba(27, 24, 20, 0.16);
-
-  --accent:        var(--tomato);
-  --accent-on:     var(--cream-lt);
-  --accent-2:      var(--mustard);
-  --positive:      #3F8F4A;
-  --warning:       var(--mustard-dk);
-  --danger:        var(--tomato);
-
-  /* Trail / cursor — see :root[data-bg=...] overrides below */
-  --trail:      var(--ink);
-
-  /* ---------- Type: families ---------- */
-  --font-sans:  "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-mono:  "IBM Plex Mono", "SF Mono", "Menlo", monospace;
-
-  /* ---------- Type: scale ---------- */
-  --fs-display: 56px;
-  --fs-h1:      40px;
-  --fs-h2:      28px;
-  --fs-h3:      20px;
-  --fs-body:    16px;
-  --fs-small:   14px;
-  --fs-xs:      12px;
-  --fs-tiny:    11px;
-
-  --lh-tight:   1.05;
-  --lh-snug:    1.2;
-  --lh-body:    1.5;
-  --lh-loose:   1.7;
-
-  --ls-display: -0.02em;
-  --ls-tight:   -0.01em;
-  --ls-body:     0;
-  --ls-label:    0.04em;
-  --ls-mono:     0.01em;
-
-  --fw-regular: 400;
-  --fw-medium:  500;
-  --fw-semi:    600;
-  --fw-bold:    700;
-
-  /* ---------- Spacing (4px base) ---------- */
-  --sp-1:  2px;
-  --sp-2:  4px;
-  --sp-3:  8px;
-  --sp-4:  12px;
-  --sp-5:  16px;
-  --sp-6:  24px;
-  --sp-7:  32px;
-  --sp-8:  48px;
-  --sp-9:  64px;
-
-  /* ---------- Radii ---------- */
-  --r-key:    6px;
-  --r-card:  12px;
-  --r-modal: 16px;
-  --r-pill: 999px;
-
-  /* ---------- Shadows: keycap layering ---------- */
-  /* Keycap: a hard 1px sidewall ink + soft cast shadow + inner highlight */
-  --key-rest:
-    0 2px 0 0 var(--ink),
-    0 3px 0 0 rgba(27,24,20,0.45),
-    0 4px 6px -2px rgba(27,24,20,0.25),
-    inset 0 1px 0 0 rgba(255,255,255,0.45);
-  --key-hover:
-    0 3px 0 0 var(--ink),
-    0 4px 0 0 rgba(27,24,20,0.45),
-    0 5px 8px -2px rgba(27,24,20,0.28),
-    inset 0 1px 0 0 rgba(255,255,255,0.5);
-  --key-press:
-    0 0px 0 0 var(--ink),
-    0 1px 0 0 rgba(27,24,20,0.45),
-    0 1px 2px 0 rgba(27,24,20,0.2),
-    inset 0 1px 0 0 rgba(255,255,255,0.25),
-    inset 0 -1px 0 0 rgba(27,24,20,0.1);
-
-  /* Cards: sit on paper */
-  --card-rest: 0 2px 0 0 rgba(27,24,20,0.85);
-  --card-hover: 0 3px 0 0 rgba(27,24,20,0.85);
-
-  /* ---------- Motion ---------- */
-  --ease-snap:    cubic-bezier(.2, 1.4, .4, 1);   /* keycap rebound */
-  --ease-out:     cubic-bezier(.2, .8, .2, 1);    /* general */
-  --ease-decay:   cubic-bezier(.17, .67, .3, 1);  /* swipe release */
-  --d-press:      80ms;
-  --d-rebound:   220ms;
-  --d-page:      240ms;
+@font-face {
+  font-family: 'Noto Sans Condensed';
+  src: url('fonts/NotoSans-VariableFont_wdth_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-stretch: 75%;        /* condensed axis pinned */
+  font-style: normal;
+  font-display: swap;
 }
 
-/* ---------- Trail color follows active background ---------- */
-:root[data-bg="cream"]   { --trail: #1B1814; }
-:root[data-bg="ink"]     { --trail: #F5EFE2; }
-:root[data-bg="tomato"]  { --trail: #F5EFE2; }
-:root[data-bg="mustard"] { --trail: #1B1814; }
+/* --------------------------------------------------------------------------
+   Light theme (default)
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  --bg-app:         #FAF7F2;
+  --bg-surface-1:   #FFFFFF;
+  --bg-surface-2:   #F4EFE6;
+  --bg-surface-3:   #EDE6D8;
+  --bg-overlay:     rgba(27, 26, 23, 0.50);
+  --bg-blur:        rgba(250, 247, 242, 0.72);
 
-/* =========================================================
-   Semantic type classes
-   ========================================================= */
+  --fg-1:  #1B1A17;
+  --fg-2:  #3A3732;
+  --fg-3:  #6B6659;
+  --fg-4:  #908A7C;
+  --fg-5:  #B3AD9E;
+  --fg-on-accent: #FFFFFF;
+
+  --accent-eco:    #6B8A70;
+  --accent-mod:    #B89B72;
+  --accent-push:   #A87166;
+  --accent-info:   #748AA6;
+  --accent-gold:   #AD9775;
+
+  --accent-eco-tint:  #EEF1ED;
+  --accent-mod-tint:  #F2ECDE;
+  --accent-push-tint: #F0E5E0;
+  --accent-info-tint: #E9EDF2;
+  --accent-gold-tint: #EEE8DB;
+
+  --border-1: #E8E2D7;
+  --border-2: #D7CFBF;
+  --border-focus: var(--accent-eco);
+
+  --shadow-float: 0 4px 24px rgba(27, 26, 23, 0.08);
+  --shadow-fab:   0 6px 20px rgba(27, 26, 23, 0.18);
+  --shadow-press: 0 1px 2px  rgba(27, 26, 23, 0.12);
+
+  color-scheme: light;
+}
+
+/* --------------------------------------------------------------------------
+   Dark theme
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --bg-app:         #17161A;
+  --bg-surface-1:   #211F24;
+  --bg-surface-2:   #2A272D;
+  --bg-surface-3:   #343038;
+  --bg-overlay:     rgba(0, 0, 0, 0.60);
+  --bg-blur:        rgba(23, 22, 26, 0.72);
+
+  --fg-1:  #F4F1EB;
+  --fg-2:  #D5D1C9;
+  --fg-3:  #A09B92;
+  --fg-4:  #76726A;
+  --fg-5:  #55524D;
+  --fg-on-accent: #1B1A17;
+
+  --accent-eco:    #86A48C;
+  --accent-mod:    #C4AB84;
+  --accent-push:   #B78B80;
+  --accent-info:   #94A8C1;
+  --accent-gold:   #BFA88A;
+
+  --accent-eco-tint:  #232B24;
+  --accent-mod-tint:  #2E2618;
+  --accent-push-tint: #2E1F1B;
+  --accent-info-tint: #1F2630;
+  --accent-gold-tint: #2B2418;
+
+  --border-1: #2A272D;
+  --border-2: #3A363D;
+  --border-focus: var(--accent-eco);
+
+  --shadow-float: none;
+  --shadow-fab:   none;
+  --shadow-press: none;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-app:         #17161A;
+    --bg-surface-1:   #211F24;
+    --bg-surface-2:   #2A272D;
+    --bg-surface-3:   #343038;
+    --bg-overlay:     rgba(0, 0, 0, 0.60);
+    --bg-blur:        rgba(23, 22, 26, 0.72);
+
+    --fg-1:  #F4F1EB;
+    --fg-2:  #D5D1C9;
+    --fg-3:  #A09B92;
+    --fg-4:  #76726A;
+    --fg-5:  #55524D;
+    --fg-on-accent: #1B1A17;
+
+    --accent-eco:    #86A48C;
+    --accent-mod:    #C4AB84;
+    --accent-push:   #B78B80;
+    --accent-info:   #94A8C1;
+    --accent-gold:   #BFA88A;
+
+    --accent-eco-tint:  #232B24;
+    --accent-mod-tint:  #2E2618;
+    --accent-push-tint: #2E1F1B;
+    --accent-info-tint: #1F2630;
+    --accent-gold-tint: #2B2418;
+
+    --border-1: #2A272D;
+    --border-2: #3A363D;
+
+    --shadow-float: none;
+    --shadow-fab:   none;
+    --shadow-press: none;
+
+    color-scheme: dark;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shared tokens
+   -------------------------------------------------------------------------- */
+:root {
+  --font-sans: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Noto Sans Condensed', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-hero:     56px;
+  --fs-display:  40px;
+  --fs-title:    28px;
+  --fs-h2:       20px;
+  --fs-body:     16px;
+  --fs-label:    14px;
+  --fs-meta:     12px;
+  --fs-caps:     11px;
+
+  --lh-hero:    1.05;
+  --lh-display: 1.10;
+  --lh-title:   1.20;
+  --lh-body:    1.50;
+  --lh-tight:   1.35;
+
+  --ls-display: -0.5px;
+  --ls-body:     0;
+  --ls-caps:     1.5px;
+  --ls-caps-wide: 2px;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  56px;
+  --space-10: 72px;
+
+  --radius-sm:   8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  --hit-min:    44px;
+  --hit-drive:  56px;
+  --hit-hero:   72px;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-micro:  120ms;
+  --dur-short:  220ms;
+  --dur-medium: 380ms;
+  --dur-long:   600ms;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
 
 html, body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--fg-1);
   font-family: var(--font-sans);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
-  color: var(--fg);
-  background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-.t-display {
-  font-family: var(--font-sans);
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-display);
-  line-height: var(--lh-tight);
-  letter-spacing: var(--ls-display);
-}
-.t-h1 {
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-h1);
-  line-height: var(--lh-tight);
-  letter-spacing: var(--ls-tight);
-}
-.t-h2 {
-  font-weight: var(--fw-semi);
-  font-size: var(--fs-h2);
-  line-height: var(--lh-snug);
-  letter-spacing: var(--ls-tight);
-}
-.t-h3 {
-  font-weight: var(--fw-semi);
-  font-size: var(--fs-h3);
-  line-height: var(--lh-snug);
-}
-.t-body {
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-body);
-  line-height: var(--lh-body);
-}
-.t-small {
-  font-size: var(--fs-small);
-  line-height: var(--lh-body);
-}
-.t-label {
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semi);
-  letter-spacing: var(--ls-label);
-  text-transform: uppercase;
-  color: var(--fg-3);
-}
-.t-mono {
-  font-family: var(--font-mono);
-  letter-spacing: var(--ls-mono);
-}
-.t-keycap {
-  font-family: var(--font-mono);
-  font-weight: var(--fw-medium);
-  letter-spacing: 0.02em;
-}
+/* --------------------------------------------------------------------------
+   Semantic type classes
+   -------------------------------------------------------------------------- */
+.fl-hero    { font-family: var(--font-display); font-size: var(--fs-hero); font-weight: var(--fw-semibold); line-height: var(--lh-hero); letter-spacing: var(--ls-display); color: var(--fg-1); font-variant-numeric: tabular-nums; }
+.fl-display { font-family: var(--font-display); font-size: var(--fs-display); font-weight: var(--fw-semibold); line-height: var(--lh-display); letter-spacing: var(--ls-display); color: var(--fg-1); font-variant-numeric: tabular-nums; }
+.fl-title   { font-size: var(--fs-title); font-weight: var(--fw-semibold); line-height: var(--lh-title); letter-spacing: -0.3px; color: var(--fg-1); margin: 0; }
+.fl-h2      { font-size: var(--fs-h2); font-weight: var(--fw-semibold); line-height: var(--lh-title); color: var(--fg-1); margin: 0; }
+.fl-body    { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--fg-3); margin: 0; }
+.fl-body-strong { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--fg-2); font-weight: var(--fw-medium); }
+.fl-label   { font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--fg-2); }
+.fl-meta    { font-size: var(--fs-meta); color: var(--fg-4); }
+.fl-caps    { font-size: var(--fs-caps); font-weight: var(--fw-semibold); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--fg-4); }
+.fl-mono    { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--fg-2); }
