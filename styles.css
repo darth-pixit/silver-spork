@@ -30,8 +30,9 @@ h4 { font-size: 13px; margin: 0 0 8px; color: var(--muted); }
 
 #topbar-right { display: flex; gap: 10px; align-items: center; }
 #household-pill {
-  font-size: 12px; background: var(--bg); border: 1px solid var(--line);
-  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line);
+  padding: 4px 12px; border-radius: 999px;
 }
 
 main { padding: 16px; max-width: 480px; margin: 0 auto; }
@@ -45,17 +46,19 @@ main { padding: 16px; max-width: 480px; margin: 0 auto; }
   padding: 20px;
 }
 
-.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
 .tab {
-  background: transparent;
+  background: #fff;
   color: var(--fg);
   border: 1px solid var(--line);
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 500;
 }
-.tab.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.tab:hover { border-color: var(--fg); }
+.tab.active { background: var(--fg); color: #fff; border-color: var(--fg); }
 
 .view { display: none; }
 .view.active { display: block; }
@@ -99,23 +102,23 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border: 1px solid var(--line);
 }
 
-.card-stack { position: relative; height: 320px; margin-bottom: 16px; }
+.card-stack { position: relative; height: 340px; margin-bottom: 16px; }
 .card {
   position: absolute; inset: 0;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 16px; padding: 24px;
+  border-radius: 16px; padding: 28px;
   display: flex; flex-direction: column; justify-content: space-between;
   box-shadow: 0 6px 18px rgba(0,0,0,.06);
   transition: transform .25s ease, opacity .25s ease;
   user-select: none;
 }
-.card .dish { font-size: 26px; font-weight: 600; line-height: 1.2; }
+.card .dish { font-size: 38px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
 .card .meta { color: var(--muted); font-size: 13px; display: flex; gap: 6px; flex-wrap: wrap; }
 .card.swipe-left { transform: translateX(-120%) rotate(-12deg); opacity: 0; }
 .card.swipe-right { transform: translateX(120%) rotate(12deg); opacity: 0; }
 .card.empty { align-items: center; justify-content: center; color: var(--muted); text-align: center; }
 
-.tag { font-size: 11px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--muted); }
+.tag { font-size: 11px; font-weight: 500; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--muted); white-space: nowrap; }
 
 .swipe-actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 8px; }
 .undo-row { display: flex; justify-content: center; margin-bottom: 16px; }
@@ -152,9 +155,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
-  font-size: 12px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 999px;
   border: 1px solid var(--line); background: #fff; color: var(--fg); cursor: pointer;
+  line-height: 1.2;
 }
+.chip:hover { border-color: var(--fg); }
 .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 .chip.today { border-style: dashed; }
 
