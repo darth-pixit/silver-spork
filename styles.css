@@ -9,6 +9,7 @@
 
 html, body { min-height: 100%; }
 body { color: var(--fg-1); }
+[hidden] { display: none !important; }
 
 /* ---------------- Top bar ---------------- */
 #topbar {
