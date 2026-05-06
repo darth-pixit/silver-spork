@@ -1,0 +1,202 @@
+/* =========================================================
+   Spork Design System — Color & Type tokens
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+@font-face {
+  font-family: "Noto Sans";
+  src: url("fonts/NotoSans-VariableFont_wdth_wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---------- Color: brand anchors ---------- */
+  --tomato:     #D63B2C;
+  --tomato-dk:  #B12C20;
+  --tomato-lt:  #ED6353;
+  --mustard:    #E8A53A;
+  --mustard-dk: #C2862A;
+  --mustard-lt: #F5C36C;
+  --cream:      #F5EFE2;
+  --cream-dk:   #ECE3D0;
+  --cream-lt:   #FAF6EC;
+
+  /* ---------- Color: ink scale ---------- */
+  --ink:        #1B1814;   /* primary text, hard edges */
+  --charcoal:   #2E2A24;   /* secondary text, keycap sidewalls */
+  --pepper:     #5C5249;   /* tertiary text, dividers */
+  --ash:        #8B8278;   /* placeholder, hint */
+  --bone:       #C9C0B2;   /* hairline */
+
+  /* ---------- Color: semantic ---------- */
+  --bg:         var(--cream);
+  --bg-alt:     var(--cream-dk);
+  --bg-paper:   var(--cream-lt);
+  --fg:         var(--ink);
+  --fg-2:       var(--charcoal);
+  --fg-3:       var(--pepper);
+  --fg-4:       var(--ash);
+  --hairline:   rgba(27, 24, 20, 0.08);
+  --hairline-2: rgba(27, 24, 20, 0.16);
+
+  --accent:        var(--tomato);
+  --accent-on:     var(--cream-lt);
+  --accent-2:      var(--mustard);
+  --positive:      #3F8F4A;
+  --warning:       var(--mustard-dk);
+  --danger:        var(--tomato);
+
+  /* Trail / cursor — see :root[data-bg=...] overrides below */
+  --trail:      var(--ink);
+
+  /* ---------- Type: families ---------- */
+  --font-sans:  "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:  "IBM Plex Mono", "SF Mono", "Menlo", monospace;
+
+  /* ---------- Type: scale ---------- */
+  --fs-display: 56px;
+  --fs-h1:      40px;
+  --fs-h2:      28px;
+  --fs-h3:      20px;
+  --fs-body:    16px;
+  --fs-small:   14px;
+  --fs-xs:      12px;
+  --fs-tiny:    11px;
+
+  --lh-tight:   1.05;
+  --lh-snug:    1.2;
+  --lh-body:    1.5;
+  --lh-loose:   1.7;
+
+  --ls-display: -0.02em;
+  --ls-tight:   -0.01em;
+  --ls-body:     0;
+  --ls-label:    0.04em;
+  --ls-mono:     0.01em;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+
+  /* ---------- Spacing (4px base) ---------- */
+  --sp-1:  2px;
+  --sp-2:  4px;
+  --sp-3:  8px;
+  --sp-4:  12px;
+  --sp-5:  16px;
+  --sp-6:  24px;
+  --sp-7:  32px;
+  --sp-8:  48px;
+  --sp-9:  64px;
+
+  /* ---------- Radii ---------- */
+  --r-key:    6px;
+  --r-card:  12px;
+  --r-modal: 16px;
+  --r-pill: 999px;
+
+  /* ---------- Shadows: keycap layering ---------- */
+  /* Keycap: a hard 1px sidewall ink + soft cast shadow + inner highlight */
+  --key-rest:
+    0 2px 0 0 var(--ink),
+    0 3px 0 0 rgba(27,24,20,0.45),
+    0 4px 6px -2px rgba(27,24,20,0.25),
+    inset 0 1px 0 0 rgba(255,255,255,0.45);
+  --key-hover:
+    0 3px 0 0 var(--ink),
+    0 4px 0 0 rgba(27,24,20,0.45),
+    0 5px 8px -2px rgba(27,24,20,0.28),
+    inset 0 1px 0 0 rgba(255,255,255,0.5);
+  --key-press:
+    0 0px 0 0 var(--ink),
+    0 1px 0 0 rgba(27,24,20,0.45),
+    0 1px 2px 0 rgba(27,24,20,0.2),
+    inset 0 1px 0 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 0 rgba(27,24,20,0.1);
+
+  /* Cards: sit on paper */
+  --card-rest: 0 2px 0 0 rgba(27,24,20,0.85);
+  --card-hover: 0 3px 0 0 rgba(27,24,20,0.85);
+
+  /* ---------- Motion ---------- */
+  --ease-snap:    cubic-bezier(.2, 1.4, .4, 1);   /* keycap rebound */
+  --ease-out:     cubic-bezier(.2, .8, .2, 1);    /* general */
+  --ease-decay:   cubic-bezier(.17, .67, .3, 1);  /* swipe release */
+  --d-press:      80ms;
+  --d-rebound:   220ms;
+  --d-page:      240ms;
+}
+
+/* ---------- Trail color follows active background ---------- */
+:root[data-bg="cream"]   { --trail: #1B1814; }
+:root[data-bg="ink"]     { --trail: #F5EFE2; }
+:root[data-bg="tomato"]  { --trail: #F5EFE2; }
+:root[data-bg="mustard"] { --trail: #1B1814; }
+
+/* =========================================================
+   Semantic type classes
+   ========================================================= */
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.t-display {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+}
+.t-h1 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+.t-h2 {
+  font-weight: var(--fw-semi);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tight);
+}
+.t-h3 {
+  font-weight: var(--fw-semi);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-snug);
+}
+.t-body {
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.t-small {
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+}
+.t-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semi);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.t-mono {
+  font-family: var(--font-mono);
+  letter-spacing: var(--ls-mono);
+}
+.t-keycap {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+}

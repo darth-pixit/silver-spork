@@ -1,0 +1,276 @@
+/* =========================================================
+   Spork — Cursor + Keycap styles (load with colors_and_type.css)
+   ========================================================= */
+
+/* ---------------- Cursor ---------------- */
+html.spork-cursor-on,
+html.spork-cursor-on * {
+  cursor: none !important;
+}
+
+.spork-cursor-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 180ms ease-out;
+}
+
+.spork-cursor-head {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--trail, #1B1814);
+  opacity: 0.7;
+  box-shadow: 0 0 0 1.5px rgba(250,246,236,0.6);
+  top: 0;
+  left: 0;
+  will-change: transform;
+  transition: width .18s var(--ease-snap), height .18s var(--ease-snap), opacity .18s ease-out;
+}
+.spork-cursor-head.is-hover {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  opacity: 1;
+  border: 1.5px solid var(--trail, #1B1814);
+  box-shadow: none;
+  margin-left: -9px;
+  margin-top: -9px;
+}
+
+.spork-cursor-trail {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--trail, #1B1814);
+  top: 0;
+  left: 0;
+  will-change: transform;
+  transition: background-color .25s ease-out;
+}
+
+/* ---------------- Keycap button — 2000s mechanical (Cherry-profile beige) ---------------- */
+.key {
+  /* Beige plastic, slightly yellowed, like aged ABS keycaps */
+  --cap-top:   #E6DBC2;   /* top dish surface */
+  --cap-mid:   #D8CCAE;   /* main body */
+  --cap-bot:   #B8AC8E;   /* lower skirt before shadow */
+  --cap-edge:  #5C4F38;   /* dark plastic edge / bottom of skirt */
+  --legend:    #2A2418;   /* near-black legend */
+  --legend-shadow: rgba(255,255,255,0.55);
+
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--cap-edge);
+  background: var(--cap-mid);  /* fallback; real surface drawn by ::before */
+  color: var(--legend);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-body);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 var(--legend-shadow);
+
+  /* squarish cap, only slightly rounded — Cherry profile */
+  border-radius: 5px 5px 4px 4px;
+  padding: 12px 16px 14px;
+  min-height: 56px;
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  isolation: isolate;
+
+  /* Tall plastic skirt: 6 stacked 1px sidewalls graduating from cap-mid → cap-edge */
+  /* Then a hard shelf line + outer cast shadow on the desk */
+  box-shadow:
+    0 1px 0 0 color-mix(in srgb, var(--cap-mid), black 8%),
+    0 2px 0 0 color-mix(in srgb, var(--cap-mid), black 14%),
+    0 3px 0 0 color-mix(in srgb, var(--cap-mid), black 22%),
+    0 4px 0 0 color-mix(in srgb, var(--cap-mid), black 32%),
+    0 5px 0 0 color-mix(in srgb, var(--cap-mid), black 42%),
+    0 6px 0 0 var(--cap-edge),
+    0 7px 0 0 rgba(0,0,0,0.35),
+    0 9px 10px -2px rgba(27,24,20,0.45),
+    0 14px 18px -6px rgba(27,24,20,0.30);
+
+  transform: translateY(0);
+  transition:
+    transform var(--d-press) var(--ease-out),
+    box-shadow var(--d-press) var(--ease-out),
+    filter   180ms ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The dished top surface — a recessed inner cap, lit from above */
+.key::before {
+  content: "";
+  position: absolute;
+  inset: 2px 3px 4px 3px;
+  border-radius: 3px 3px 2px 2px;
+  /* Concave dish: bright top, mid body, slightly darker bottom — like spherical Cherry profile */
+  background:
+    radial-gradient(140% 90% at 50% 110%, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 55%),
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%),
+    linear-gradient(180deg, var(--cap-top) 0%, var(--cap-mid) 70%, var(--cap-bot) 100%);
+  /* Inner edge highlights to sell the dish */
+  box-shadow:
+    inset 0 1px 0 0 rgba(255,255,255,0.7),
+    inset 0 -1px 0 0 rgba(0,0,0,0.12),
+    inset 1px 0 0 0 rgba(255,255,255,0.25),
+    inset -1px 0 0 0 rgba(0,0,0,0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Subtle scratch/wear pattern on top — tiny noise via a second pseudo */
+.key::after {
+  content: "";
+  position: absolute;
+  inset: 2px 3px 4px 3px;
+  border-radius: 3px 3px 2px 2px;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.012) 0 1px, transparent 1px 3px);
+  z-index: 0;
+  opacity: .7;
+}
+
+/* Legend sits above the dish */
+.key > * { position: relative; z-index: 1; }
+
+.key:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 0 color-mix(in srgb, var(--cap-mid), black 8%),
+    0 2px 0 0 color-mix(in srgb, var(--cap-mid), black 14%),
+    0 3px 0 0 color-mix(in srgb, var(--cap-mid), black 22%),
+    0 4px 0 0 color-mix(in srgb, var(--cap-mid), black 32%),
+    0 5px 0 0 color-mix(in srgb, var(--cap-mid), black 42%),
+    0 6px 0 0 color-mix(in srgb, var(--cap-mid), black 50%),
+    0 7px 0 0 var(--cap-edge),
+    0 8px 0 0 rgba(0,0,0,0.35),
+    0 11px 12px -2px rgba(27,24,20,0.5),
+    0 16px 22px -6px rgba(27,24,20,0.32);
+}
+
+.key.is-pressing,
+.key:active {
+  /* Real keypress: the cap travels DOWN the full skirt height */
+  transform: translateY(5px);
+  box-shadow:
+    0 1px 0 0 color-mix(in srgb, var(--cap-mid), black 12%),
+    0 2px 0 0 var(--cap-edge),
+    0 3px 4px -1px rgba(27,24,20,0.4),
+    0 4px 8px -2px rgba(27,24,20,0.25);
+  filter: brightness(0.94) saturate(0.95);
+  transition-duration: var(--d-press);
+}
+
+/* Rebound overshoot after release */
+.key.is-rebound {
+  animation: key-rebound var(--d-rebound) var(--ease-snap);
+}
+@keyframes key-rebound {
+  0%   { transform: translateY(2px); }
+  45%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+.key:disabled,
+.key[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+  box-shadow: 0 1px 0 0 var(--ink);
+}
+
+/* Accent caps — the colored "Enter / Esc" keys on retro boards */
+.key--primary {
+  --cap-top:  #E55A4B;
+  --cap-mid:  #C53A2C;
+  --cap-bot:  #8E2418;
+  --cap-edge: #3D0F08;
+  --legend:   #FAF6EC;
+  --legend-shadow: rgba(0,0,0,0.4);
+  color: var(--legend);
+}
+.key--secondary {
+  --cap-top:  #F4C062;
+  --cap-mid:  #E2A538;
+  --cap-bot:  #A87820;
+  --cap-edge: #4D3608;
+  --legend:   #1B1814;
+  --legend-shadow: rgba(255,255,255,0.5);
+}
+.key--ghost {
+  --cap-top:  #3D3528;
+  --cap-mid:  #2A2418;
+  --cap-bot:  #1A1610;
+  --cap-edge: #0A0805;
+  --legend:   #E6DBC2;
+  --legend-shadow: rgba(0,0,0,0.6);
+  color: var(--legend);
+}
+
+.key--sm { padding: 9px 12px 11px; min-height: 44px; min-width: 44px; font-size: var(--fs-small); }
+.key--lg { padding: 16px 24px 18px; min-height: 64px; min-width: 64px; font-size: var(--fs-h3); }
+.key--block { display: flex; width: 100%; }
+.key--square { padding: 0; width: 56px; min-height: 56px; min-width: 56px; }
+
+/* Disabled — like a dirty, dusty unused key */
+.key:disabled,
+.key[aria-disabled="true"] {
+  opacity: 0.55;
+  pointer-events: none;
+  filter: grayscale(0.4);
+}
+
+/* ---------------- Card ---------------- */
+.card {
+  background: var(--bg-paper);
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-card);
+  box-shadow: var(--card-rest);
+  padding: var(--sp-6);
+}
+
+/* ---------------- Pill / chip ---------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--hairline-2);
+  background: var(--bg-paper);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--fg-2);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+.chip--accent { background: var(--tomato); color: var(--cream-lt); border-color: transparent; }
+.chip--mustard { background: var(--mustard); color: var(--ink); border-color: transparent; }
+
+/* ---------------- Field ---------------- */
+.field {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ink);
+  background: var(--cream-lt);
+  border-radius: var(--r-key);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  color: var(--fg);
+  box-shadow: inset 0 1px 0 0 rgba(27,24,20,0.06);
+}
+.field:focus {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 0 rgba(27,24,20,0.06),
+    0 0 0 3px var(--mustard-lt);
+}
+.field::placeholder { color: var(--ash); }

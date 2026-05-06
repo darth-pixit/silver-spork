@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bg="cream">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Meal Swipe</title>
+<link rel="stylesheet" href="design/colors_and_type.css" />
+<link rel="stylesheet" href="design/components.css" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header id="topbar">
-    <h1>Meal Swipe</h1>
+    <h1><img src="design/assets/mark.svg" alt="" width="28" height="28" /><span>Meal Swipe</span></h1>
     <div id="topbar-right" hidden>
       <span id="household-pill"></span>
       <button id="leave-btn" class="link-btn">Leave</button>
@@ -192,6 +194,7 @@
     </section>
   </main>
 
+  <script src="design/interactions.js" defer></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

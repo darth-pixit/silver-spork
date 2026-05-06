@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 72" width="260" height="72">
+  <defs>
+    
+  </defs>
+  
+  <g transform="translate(8 6) rotate(-18 30 30)">
+    
+    <g fill="#D63B2C">
+      <rect x="20" y="0" width="3" height="14" rx="1.2"></rect>
+      <rect x="26" y="0" width="3" height="14" rx="1.2"></rect>
+      <rect x="32" y="0" width="3" height="14" rx="1.2"></rect>
+      <rect x="18" y="12" width="19" height="5" rx="1.8"></rect>
+      <rect x="26" y="16" width="3" height="48" rx="1.5"></rect>
+    </g>
+  </g>
+  <g transform="translate(8 6) rotate(18 30 30)">
+    
+    <g stroke="#E8A53A" fill="none" stroke-width="3.5">
+      <ellipse cx="28" cy="11" rx="10" ry="12"></ellipse>
+    </g>
+    <rect x="26.5" y="22" width="3" height="42" rx="1.5" fill="#E8A53A"></rect>
+  </g>
+  
+  <circle cx="38" cy="38" r="3.5" class="dot"></circle>
+  <text x="84" y="48" class="wordmark">spork</text>
+</svg>
