@@ -226,6 +226,7 @@ function showApp() {
   show($("app-view"));
   show($("topbar-right"));
   $("household-pill").textContent = currentHousehold.name;
+  applySwipeMode();
 }
 
 $("leave-btn").addEventListener("click", () => {
@@ -251,7 +252,7 @@ document.querySelectorAll("#app-view nav .tab").forEach((btn) => {
 // ---------- Render ----------
 
 function renderAll() {
-  renderCard();
+  renderSwipe();
   renderPlan();
   renderSettings();
   renderTastes();
@@ -279,6 +280,38 @@ function dishCandidates() {
   return pool.filter((d) => !myVotes.has(d.id));
 }
 
+let swipeMode = localStorage.getItem("swipeMode") === "list" ? "list" : "cards";
+const LIST_PAGE_SIZE = 50;
+
+function dishTags(d) {
+  return [
+    d.region, d.diet,
+    d.spice === 3 ? "spicy" : d.spice === 1 ? "mild" : "med",
+    d.effort === 1 ? "quick" : d.effort === 3 ? "elaborate" : "med effort",
+  ];
+}
+
+function applySwipeMode() {
+  const cards = $("card-stack");
+  const list = $("list-stack");
+  const actions = document.querySelector(".swipe-actions");
+  const undoRow = document.querySelector(".undo-row");
+  const isList = swipeMode === "list";
+  cards.hidden = isList;
+  list.hidden = !isList;
+  if (actions) actions.style.display = isList ? "none" : "";
+  if (undoRow) undoRow.style.display = isList ? "none" : "";
+  document.querySelectorAll(".view-toggle .seg").forEach((b) => {
+    b.classList.toggle("active", b.dataset.mode === swipeMode);
+  });
+  renderSwipe();
+}
+
+function renderSwipe() {
+  if (swipeMode === "list") renderList();
+  else renderCard();
+}
+
 function renderCard() {
   const stack = $("card-stack");
   stack.innerHTML = "";
@@ -293,24 +326,71 @@ function renderCard() {
   const card = document.createElement("div");
   card.className = "card";
   card.dataset.id = next.id;
-  const tags = [
-    next.region, next.diet,
-    next.spice === 3 ? "spicy" : next.spice === 1 ? "mild" : "med",
-    next.effort === 1 ? "quick" : next.effort === 3 ? "elaborate" : "med effort",
-  ].map((t) => `<span class="tag">${t}</span>`).join(" ");
+  const tags = dishTags(next).map((t) => `<span class="tag">${t}</span>`).join(" ");
   card.innerHTML = `<div class="dish">${escapeHtml(next.name)}</div><div class="meta">${tags}</div>`;
   stack.appendChild(card);
 }
+
+function renderList() {
+  const list = $("list-stack");
+  list.innerHTML = "";
+  const candidates = dishCandidates().slice(0, LIST_PAGE_SIZE);
+  if (!candidates.length) {
+    const li = document.createElement("li");
+    li.className = "list-row empty";
+    li.textContent = "You're caught up. Loosen filters in Settings to see more.";
+    list.appendChild(li);
+    return;
+  }
+  for (const d of candidates) {
+    const li = document.createElement("li");
+    li.className = "list-row";
+    li.dataset.id = d.id;
+    const tags = dishTags(d).map((t) => `<span class="tag">${t}</span>`).join(" ");
+    li.innerHTML = `
+      <div class="list-row-main">
+        <div class="list-row-name">${escapeHtml(d.name)}</div>
+        <div class="meta">${tags}</div>
+      </div>
+      <div class="list-row-actions">
+        <button type="button" class="row-btn nope" data-vote="dislike" aria-label="Nope">✕</button>
+        <button type="button" class="row-btn yum" data-vote="like" aria-label="Yum">✓</button>
+      </div>`;
+    list.appendChild(li);
+  }
+}
+
+$("list-stack").addEventListener("click", (e) => {
+  const btn = e.target.closest("button.row-btn[data-vote]");
+  if (!btn) return;
+  const row = btn.closest(".list-row");
+  const id = row?.dataset.id;
+  if (!id) return;
+  const dish = dishCandidates().find((d) => d.id === id);
+  if (!dish) return;
+  row.classList.add(btn.dataset.vote === "like" ? "swipe-right" : "swipe-left");
+  setTimeout(() => swipe(btn.dataset.vote, dish), 120);
+});
+
+document.querySelectorAll(".view-toggle .seg").forEach((b) => {
+  b.addEventListener("click", () => {
+    swipeMode = b.dataset.mode === "list" ? "list" : "cards";
+    localStorage.setItem("swipeMode", swipeMode);
+    applySwipeMode();
+  });
+});
 
 $("like-btn").addEventListener("click", () => swipe("like"));
 $("dislike-btn").addEventListener("click", () => swipe("dislike"));
 $("undo-btn").addEventListener("click", undoSwipe);
 
-async function swipe(vote) {
-  const dish = dishCandidates()[0];
+async function swipe(vote, dishArg) {
+  const dish = dishArg || dishCandidates()[0];
   if (!dish || !currentHousehold) return;
-  const card = document.querySelector(".card[data-id]");
-  if (card) card.classList.add(vote === "like" ? "swipe-right" : "swipe-left");
+  if (!dishArg) {
+    const card = document.querySelector(".card[data-id]");
+    if (card) card.classList.add(vote === "like" ? "swipe-right" : "swipe-left");
+  }
   if (vote === "like" && !local.liked.includes(dish.name)) local.liked.push(dish.name);
   if (vote === "dislike" && !local.disliked.includes(dish.name)) local.disliked.push(dish.name);
   saveLocal();
@@ -321,7 +401,7 @@ async function swipe(vote) {
   });
   lastSwipe = { dishId: dish.id, dishName: dish.name, vote, docId };
   updateUndoButton();
-  setTimeout(renderCard, 220);
+  setTimeout(renderSwipe, 220);
 }
 
 async function undoSwipe() {
@@ -335,7 +415,7 @@ async function undoSwipe() {
   saveLocal();
   lastSwipe = null;
   updateUndoButton();
-  renderCard();
+  renderSwipe();
   renderTastes();
 }
 
@@ -701,7 +781,7 @@ document.addEventListener("click", (e) => {
   local[kind] = local[kind].filter((n) => n !== name);
   saveLocal();
   renderTastes();
-  renderCard();
+  renderSwipe();
 });
 
 // ---------- Members ----------
