@@ -72,6 +72,9 @@
           <button id="dislike-btn" class="big nope">Nope</button>
           <button id="like-btn" class="big yum">Yum</button>
         </div>
+        <div class="undo-row">
+          <button id="undo-btn" class="link-btn" disabled>↩ Undo last swipe</button>
+        </div>
         <div class="manual-entry">
           <p class="hint">Already have something in mind?</p>
           <form id="manual-form">
@@ -86,11 +89,18 @@
       </section>
 
       <section id="plan" class="view">
-        <h2>Matched this week</h2>
+        <h2>Today's menu</h2>
         <p class="hint" id="match-hint"></p>
-        <ul id="plan-list" class="plan-list"></ul>
+        <div class="menu-slots">
+          <label>Breakfast<input id="slot-breakfast" type="text" maxlength="80" placeholder="e.g. Poha" autocomplete="off" /></label>
+          <div class="chips" id="slot-breakfast-chips"></div>
+          <label>Lunch<input id="slot-lunch" type="text" maxlength="80" placeholder="e.g. Rajma chawal" autocomplete="off" /></label>
+          <div class="chips" id="slot-lunch-chips"></div>
+          <label>Dinner<input id="slot-dinner" type="text" maxlength="80" placeholder="e.g. Khichdi + papad" autocomplete="off" /></label>
+          <div class="chips" id="slot-dinner-chips"></div>
+        </div>
         <button id="send-cook-btn" class="primary">Send to cook on WhatsApp</button>
-        <button id="reset-week-btn" class="link-btn">Start a new week (clear swipes)</button>
+        <button id="reset-today-btn" class="link-btn">Clear today's deck</button>
       </section>
 
       <section id="settings" class="view">

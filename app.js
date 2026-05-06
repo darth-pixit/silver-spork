@@ -1,9 +1,11 @@
 import { db } from "./firebase-config.js";
 import {
-  doc, setDoc, getDoc, updateDoc, collection, getDocs,
+  doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs,
   onSnapshot, serverTimestamp, arrayUnion, arrayRemove, runTransaction, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { ALL_REGIONS, DEFAULT_FILTERS, dishesForFilters } from "./dishes.js";
+import { ALL_REGIONS, DEFAULT_FILTERS, DISHES, dishesForFilters } from "./dishes.js";
+
+const DISH_BY_ID = new Map(DISHES.map((d) => [d.id, d]));
 
 const $ = (id) => document.getElementById(id);
 const show = (el) => el && (el.hidden = false);
@@ -35,6 +37,11 @@ let currentHousehold = null;
 let unsubHousehold = null;
 let unsubSwipes = null;
 let allSwipes = [];
+let lastSwipe = null;
+
+const todayKey = () => new Date().toLocaleDateString("en-CA");
+const SWIPE_RETENTION_DAYS = 7;
+const SUGGESTION_RETENTION_DAYS = 2;
 
 // ---------- Boot ----------
 
@@ -64,9 +71,41 @@ function attachHousehold(hid) {
     renderAll();
   });
   unsubSwipes = onSnapshot(collection(db, "households", hid, "swipes"), (snap) => {
-    allSwipes = snap.docs.map((d) => d.data());
+    allSwipes = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
     if (currentHousehold) renderAll();
   });
+  pruneStaleData(hid).catch(() => {});
+}
+
+async function pruneStaleData(hid) {
+  const today = todayKey();
+  const cutoffSwipe = new Date();
+  cutoffSwipe.setDate(cutoffSwipe.getDate() - SWIPE_RETENTION_DAYS);
+  const cutoffSwipeKey = cutoffSwipe.toLocaleDateString("en-CA");
+  try {
+    const snap = await getDocs(collection(db, "households", hid, "swipes"));
+    const batch = writeBatch(db);
+    let count = 0;
+    snap.docs.forEach((d) => {
+      const dk = d.data().dateKey;
+      if (dk && dk < cutoffSwipeKey) { batch.delete(d.ref); count++; }
+    });
+    if (count) await batch.commit();
+  } catch {}
+  try {
+    const hhSnap = await getDoc(doc(db, "households", hid));
+    if (!hhSnap.exists()) return;
+    const sugg = hhSnap.data().todaySuggestions || [];
+    const cutoff = Date.now() - SUGGESTION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const fresh = sugg.filter((s) => (s.at || 0) >= cutoff);
+    if (fresh.length !== sugg.length) {
+      await updateDoc(doc(db, "households", hid), { todaySuggestions: fresh });
+    }
+    const tm = hhSnap.data().todayMenu;
+    if (tm && tm.dateKey && tm.dateKey !== today) {
+      await updateDoc(doc(db, "households", hid), { todayMenu: { dateKey: today, breakfast: "", lunch: "", dinner: "" } });
+    }
+  } catch {}
 }
 
 // ---------- Onboarding ----------
@@ -208,8 +247,13 @@ function renderAll() {
   renderMembers();
 }
 
+function todaysSwipes() {
+  const today = todayKey();
+  return allSwipes.filter((s) => (s.dateKey || "") === today);
+}
+
 function userSwipes(uid) {
-  return allSwipes.filter((s) => s.userId === uid);
+  return todaysSwipes().filter((s) => s.userId === uid);
 }
 
 function dishCandidates() {
@@ -221,9 +265,7 @@ function dishCandidates() {
     }))
   );
   const myVotes = new Set(userSwipes(userId).map((s) => s.dishId));
-  return pool.filter(
-    (d) => !myVotes.has(d.id) && !local.liked.includes(d.name) && !local.disliked.includes(d.name)
-  );
+  return pool.filter((d) => !myVotes.has(d.id));
 }
 
 function renderCard() {
@@ -251,6 +293,7 @@ function renderCard() {
 
 $("like-btn").addEventListener("click", () => swipe("like"));
 $("dislike-btn").addEventListener("click", () => swipe("dislike"));
+$("undo-btn").addEventListener("click", undoSwipe);
 
 async function swipe(vote) {
   const dish = dishCandidates()[0];
@@ -260,10 +303,35 @@ async function swipe(vote) {
   if (vote === "like" && !local.liked.includes(dish.name)) local.liked.push(dish.name);
   if (vote === "dislike" && !local.disliked.includes(dish.name)) local.disliked.push(dish.name);
   saveLocal();
-  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${userId}_${dish.id}`), {
-    userId, dishId: dish.id, dishName: dish.name, vote, at: serverTimestamp(),
+  const dateKey = todayKey();
+  const docId = `${userId}_${dish.id}_${dateKey}`;
+  await setDoc(doc(db, "households", currentHousehold.id, "swipes", docId), {
+    userId, dishId: dish.id, dishName: dish.name, vote, dateKey, at: serverTimestamp(),
   });
+  lastSwipe = { dishId: dish.id, dishName: dish.name, vote, docId };
+  updateUndoButton();
   setTimeout(renderCard, 220);
+}
+
+async function undoSwipe() {
+  if (!lastSwipe || !currentHousehold) return;
+  const { dishName, vote, docId } = lastSwipe;
+  try {
+    await deleteDoc(doc(db, "households", currentHousehold.id, "swipes", docId));
+  } catch {}
+  if (vote === "like") local.liked = local.liked.filter((n) => n !== dishName);
+  if (vote === "dislike") local.disliked = local.disliked.filter((n) => n !== dishName);
+  saveLocal();
+  lastSwipe = null;
+  updateUndoButton();
+  renderCard();
+  renderTastes();
+}
+
+function updateUndoButton() {
+  const btn = $("undo-btn");
+  if (!btn) return;
+  btn.disabled = !lastSwipe;
 }
 
 $("add-to-deck-btn").addEventListener("click", async () => {
@@ -312,7 +380,7 @@ function matchedDishes() {
   if (!currentHousehold) return [];
   const memberCount = currentHousehold.members.length;
   const byDish = new Map();
-  for (const s of allSwipes) {
+  for (const s of todaysSwipes()) {
     if (!byDish.has(s.dishId)) byDish.set(s.dishId, { name: s.dishName, likes: new Set(), dislikes: new Set() });
     const e = byDish.get(s.dishId);
     if (s.vote === "like") e.likes.add(s.userId);
@@ -326,77 +394,141 @@ function matchedDishes() {
   return out;
 }
 
-function planLi(name, tagText, removeIdx = null) {
-  const li = document.createElement("li");
-  const remove = removeIdx !== null ? `<button data-today-idx="${removeIdx}" title="Remove">×</button>` : "";
-  li.innerHTML = `<span>${escapeHtml(name)} <span class="tag">${escapeHtml(tagText)}</span></span>${remove}`;
-  return li;
+const SLOTS = ["breakfast", "lunch", "dinner"];
+const SLOT_LABEL = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
+
+function todayMenu() {
+  const tm = currentHousehold?.todayMenu;
+  if (!tm || tm.dateKey !== todayKey()) return { breakfast: "", lunch: "", dinner: "" };
+  return { breakfast: tm.breakfast || "", lunch: tm.lunch || "", dinner: tm.dinner || "" };
+}
+
+function suggestionsToday() {
+  const today = todayKey();
+  return (currentHousehold?.todaySuggestions || []).filter((s) => {
+    if (!s.at) return false;
+    return new Date(s.at).toLocaleDateString("en-CA") === today;
+  });
+}
+
+function chipsForSlot(slot, matched, suggestions) {
+  const chips = [];
+  for (const m of matched) {
+    const dish = DISH_BY_ID.get(m.dishId);
+    const meals = dish?.meals;
+    if (!meals || meals.includes(slot)) chips.push({ name: m.name, kind: "matched" });
+  }
+  for (const s of suggestions) chips.push({ name: s.name, kind: "today" });
+  const seen = new Set();
+  return chips.filter(({ name }) => {
+    const k = name.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 function renderPlan() {
-  const ul = $("plan-list");
-  ul.innerHTML = "";
-  const matched = matchedDishes();
-  const today = currentHousehold.todaySuggestions || [];
+  if (!currentHousehold) return;
   const memberCount = currentHousehold.members.length;
   $("match-hint").textContent = memberCount > 1
-    ? `A dish matches when all ${memberCount} members swipe yum. "Today" suggestions skip the vote.`
-    : "Invite others with the join code in Settings to make matches happen.";
+    ? `Set today's menu. Tap a chip to fill a slot, or type your own. Matches show when all ${memberCount} members swipe yum.`
+    : "Set today's menu. Type freely, or invite others with the join code so swipe matches surface as chips.";
 
-  today.forEach((s, i) => ul.appendChild(planLi(s.name, `today · ${s.byName || "member"}`, i)));
-  matched.forEach(({ name }) => ul.appendChild(planLi(name, "matched")));
+  const menu = todayMenu();
+  const matched = matchedDishes();
+  const suggestions = suggestionsToday();
 
-  if (matched.length === 0 && today.length === 0) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No matches or suggestions yet.";
-    ul.appendChild(li);
+  for (const slot of SLOTS) {
+    const input = $(`slot-${slot}`);
+    if (input && document.activeElement !== input) input.value = menu[slot] || "";
+    const chipWrap = $(`slot-${slot}-chips`);
+    if (!chipWrap) continue;
+    chipWrap.innerHTML = "";
+    const chips = chipsForSlot(slot, matched, suggestions);
+    if (chips.length === 0) {
+      const empty = document.createElement("span");
+      empty.className = "hint";
+      empty.style.fontSize = "12px";
+      empty.textContent = "No suggestions yet — type your own.";
+      chipWrap.appendChild(empty);
+    } else {
+      for (const c of chips) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (c.kind === "today" ? " today" : "");
+        b.textContent = c.name;
+        b.dataset.slot = slot;
+        b.dataset.fill = c.name;
+        chipWrap.appendChild(b);
+      }
+    }
   }
 
-  $("send-cook-btn").disabled =
-    !currentHousehold.cookPhone || (matched.length === 0 && today.length === 0);
+  const anyFilled = SLOTS.some((s) => (menu[s] || "").trim());
+  $("send-cook-btn").disabled = !currentHousehold.cookPhone || !anyFilled;
 }
 
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest("button[data-today-idx]");
-  if (!btn || !currentHousehold) return;
-  const idx = Number(btn.dataset.todayIdx);
-  const item = (currentHousehold.todaySuggestions || [])[idx];
-  if (!item) return;
-  await updateDoc(doc(db, "households", currentHousehold.id), {
-    todaySuggestions: arrayRemove(item),
+async function saveMenuField(slot, value) {
+  if (!currentHousehold) return;
+  const menu = { ...todayMenu(), [slot]: value, dateKey: todayKey() };
+  await updateDoc(doc(db, "households", currentHousehold.id), { todayMenu: menu });
+}
+
+let menuSaveTimer = null;
+SLOTS.forEach((slot) => {
+  const input = $(`slot-${slot}`);
+  if (!input) return;
+  input.addEventListener("input", () => {
+    clearTimeout(menuSaveTimer);
+    const value = input.value;
+    menuSaveTimer = setTimeout(() => saveMenuField(slot, value), 400);
+  });
+  input.addEventListener("blur", () => {
+    clearTimeout(menuSaveTimer);
+    saveMenuField(slot, input.value);
   });
 });
 
+document.addEventListener("click", async (e) => {
+  const chip = e.target.closest("button.chip[data-fill]");
+  if (!chip) return;
+  const slot = chip.dataset.slot;
+  const value = chip.dataset.fill;
+  const input = $(`slot-${slot}`);
+  if (input) input.value = value;
+  await saveMenuField(slot, value);
+});
+
 $("send-cook-btn").addEventListener("click", () => {
-  const matched = matchedDishes();
-  const today = currentHousehold.todaySuggestions || [];
-  if ((!matched.length && !today.length) || !currentHousehold.cookPhone) return;
+  if (!currentHousehold?.cookPhone) return;
+  const menu = todayMenu();
+  const filled = SLOTS.filter((s) => (menu[s] || "").trim());
+  if (!filled.length) return;
   const cookName = currentHousehold.cookName || "ji";
   const family = currentHousehold.name;
-  const parts = [`Namaste ${cookName} 🙏`, `From the ${family} family:`, ""];
-  if (today.length) {
-    parts.push("For today:");
-    today.forEach((s, i) => parts.push(`${i + 1}. ${s.name}`));
-    parts.push("");
-  }
-  if (matched.length) {
-    parts.push("This week's matches:");
-    matched.forEach((d, i) => parts.push(`${i + 1}. ${d.name}`));
-    parts.push("");
-  }
-  parts.push("Anything missing in groceries? Reply here.");
+  const parts = [`Namaste ${cookName} 🙏`, `From the ${family} family — today's menu:`, ""];
+  for (const slot of filled) parts.push(`${SLOT_LABEL[slot]}: ${menu[slot].trim()}`);
+  parts.push("", "Anything missing in groceries? Reply here.");
   const phone = (currentHousehold.cookPhone || "").replace(/\D/g, "");
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(parts.join("\n"))}`, "_blank");
 });
 
-$("reset-week-btn").addEventListener("click", async () => {
-  if (!confirm("Clear everyone's swipes and today's suggestions, and start fresh?")) return;
+$("reset-today-btn").addEventListener("click", async () => {
+  if (!confirm("Clear today's swipes, suggestions and menu for everyone?")) return;
+  const today = todayKey();
   const snap = await getDocs(collection(db, "households", currentHousehold.id, "swipes"));
   const batch = writeBatch(db);
-  snap.docs.forEach((d) => batch.delete(d.ref));
-  batch.update(doc(db, "households", currentHousehold.id), { todaySuggestions: [] });
+  snap.docs.forEach((d) => {
+    if ((d.data().dateKey || "") === today) batch.delete(d.ref);
+  });
+  batch.update(doc(db, "households", currentHousehold.id), {
+    todaySuggestions: [],
+    todayMenu: { dateKey: today, breakfast: "", lunch: "", dinner: "" },
+  });
   await batch.commit();
+  lastSwipe = null;
+  updateUndoButton();
 });
 
 // ---------- Settings ----------
