@@ -61,14 +61,30 @@ const SUGGESTION_RETENTION_DAYS = 2;
   applyJoinLink();
 })();
 
+let onboardChoice = "create";
+let prefilledJoinCode = "";
+
 function applyJoinLink() {
   const params = new URLSearchParams(window.location.search);
   const code = (params.get("join") || "").trim().toUpperCase();
   if (!code) return;
-  const joinTab = document.querySelector('#household-view [data-onboard="join"]');
-  if (joinTab) joinTab.click();
+  prefilledJoinCode = code;
   const input = $("join-code");
   if (input) input.value = code;
+  $("onboard-choice-wrap").hidden = true;
+  $("onboard-step1-hint").textContent = "You've been invited! Just tell us your name to join.";
+  $("onboard-continue").textContent = "Join household";
+}
+
+function showOnboardStep(step) {
+  document.querySelectorAll("#household-view .onboard-step").forEach((el) => {
+    el.hidden = el.dataset.step !== step;
+  });
+  const focusInput =
+    step === "1" ? $("display-name") :
+    step === "2-create" ? $("hh-name") :
+    step === "2-join" ? $("join-code") : null;
+  if (focusInput) setTimeout(() => focusInput.focus(), 0);
 }
 
 function attachHousehold(hid) {
@@ -125,16 +141,55 @@ document.querySelectorAll("#household-view [data-onboard]").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#household-view [data-onboard]").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-    const which = btn.dataset.onboard;
-    $("create-household-form").hidden = which !== "create";
-    $("join-household-form").hidden = which !== "join";
+    onboardChoice = btn.dataset.onboard === "join" ? "join" : "create";
   });
 });
 
-$("create-household-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+$("onboard-continue").addEventListener("click", async () => {
   hide($("household-error"));
   if (!ensureName()) return;
+  if (prefilledJoinCode) {
+    try {
+      const hid = await joinHousehold(prefilledJoinCode);
+      attachHousehold(hid);
+    } catch (err) {
+      showError("household-error", err.message || "Could not join");
+    }
+    return;
+  }
+  showOnboardStep(onboardChoice === "join" ? "2-join" : "2-create");
+});
+
+$("display-name").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("onboard-continue").click();
+  }
+});
+
+document.querySelectorAll(".onboard-back").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    hideStepError($("create-household-form"));
+    hideStepError($("join-household-form"));
+    showOnboardStep("1");
+  });
+});
+
+function showStepError(formEl, msg) {
+  const p = formEl?.querySelector(".onboard-step-error");
+  if (!p) return;
+  p.textContent = msg;
+  show(p);
+}
+function hideStepError(formEl) {
+  const p = formEl?.querySelector(".onboard-step-error");
+  if (p) hide(p);
+}
+
+$("create-household-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formEl = e.currentTarget;
+  hideStepError(formEl);
   const name = $("hh-name").value.trim();
   const cookName = $("cook-name").value.trim();
   const cookPhone = digitsWithCC($("cook-cc").value, $("cook-phone").value);
@@ -143,21 +198,21 @@ $("create-household-form").addEventListener("submit", async (e) => {
     const hid = await createHousehold({ name, cookName, cookPhone });
     attachHousehold(hid);
   } catch (err) {
-    showError("household-error", err.message || "Could not create");
+    showStepError(formEl, err.message || "Could not create");
   }
 });
 
 $("join-household-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  hide($("household-error"));
-  if (!ensureName()) return;
+  const formEl = e.currentTarget;
+  hideStepError(formEl);
   const code = $("join-code").value.trim().toUpperCase();
   if (!code) return;
   try {
     const hid = await joinHousehold(code);
     attachHousehold(hid);
   } catch (err) {
-    showError("household-error", err.message || "Could not join");
+    showStepError(formEl, err.message || "Could not join");
   }
 });
 
@@ -219,6 +274,7 @@ function showOnboarding() {
   show($("household-view"));
   hide($("topbar-right"));
   if (displayName) $("display-name").value = displayName;
+  showOnboardStep("1");
 }
 
 function showApp() {
