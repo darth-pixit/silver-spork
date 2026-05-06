@@ -113,6 +113,40 @@ export const DISHES = [
   { id: "dalia", name: "Dalia (savoury)", region: "everyday", diet: "veg", jain: false, meals: ["breakfast","dinner"], spice: 1, effort: 1, heaviness: 1, contains: ["gluten","root"], ingredients: ["broken wheat","vegetables"] },
   { id: "veg-soup-bread", name: "Vegetable soup + garlic bread", region: "continental", diet: "veg", jain: false, meals: ["dinner"], spice: 1, effort: 1, heaviness: 1, contains: ["gluten","root","onion-garlic"], ingredients: ["mixed vegetables","bread"] },
   { id: "dal-roti-sabzi", name: "Dal + roti + sabzi", region: "everyday", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 2, effort: 2, heaviness: 2, contains: ["gluten"], ingredients: ["dal","wheat","vegetables"] },
+
+  // More veg — breakfasts
+  { id: "moong-dal-chilla", name: "Moong dal chilla + chutney", region: "north", diet: "veg", jain: false, meals: ["breakfast"], spice: 1, effort: 1, heaviness: 1, contains: ["onion-garlic"], ingredients: ["moong dal","onion","coriander"] },
+  { id: "oats-chilla", name: "Oats chilla", region: "everyday", diet: "veg", jain: true, meals: ["breakfast"], spice: 1, effort: 1, heaviness: 1, contains: [], ingredients: ["oats","tomato","coriander"] },
+  { id: "idiyappam-stew", name: "Idiyappam + veg stew", region: "kerala", diet: "veg", jain: false, meals: ["breakfast","dinner"], spice: 1, effort: 2, heaviness: 2, contains: ["root"], ingredients: ["rice flour","coconut milk","vegetables"] },
+  { id: "akki-rotti", name: "Akki rotti + chutney", region: "south", diet: "veg", jain: false, meals: ["breakfast"], spice: 2, effort: 2, heaviness: 2, contains: ["onion-garlic"], ingredients: ["rice flour","onion","coriander"] },
+  { id: "paniyaram", name: "Kuzhi paniyaram", region: "south", diet: "veg", jain: false, meals: ["breakfast","snack"], spice: 1, effort: 2, heaviness: 1, contains: ["onion-garlic"], ingredients: ["rice","urad dal","onion"] },
+  { id: "methi-paratha", name: "Methi paratha + curd", region: "punjabi", diet: "veg", jain: true, meals: ["breakfast"], spice: 1, effort: 2, heaviness: 2, contains: ["gluten","dairy"], ingredients: ["wheat","fenugreek","yogurt"] },
+  { id: "sheera", name: "Sooji sheera", region: "everyday", diet: "veg", jain: true, meals: ["breakfast","snack"], spice: 1, effort: 1, heaviness: 2, contains: ["dairy","gluten","nuts"], ingredients: ["semolina","ghee","sugar","cashew"] },
+  { id: "ragi-dosa", name: "Ragi dosa + chutney", region: "south", diet: "veg", jain: true, meals: ["breakfast","dinner"], spice: 1, effort: 2, heaviness: 1, contains: [], ingredients: ["ragi","rice"] },
+  { id: "rava-upma-veg", name: "Rava upma with veggies", region: "south", diet: "veg", jain: false, meals: ["breakfast"], spice: 1, effort: 1, heaviness: 1, contains: ["root"], ingredients: ["semolina","carrot","peas"] },
+
+  // More veg — light dinners and sabzis
+  { id: "lauki-chana-dal", name: "Lauki chana dal + roti", region: "north", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 1, effort: 2, heaviness: 2, contains: ["gluten","onion-garlic"], ingredients: ["bottle gourd","chana dal","onion"] },
+  { id: "tinda-masala", name: "Tinda masala + roti", region: "punjabi", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 2, effort: 2, heaviness: 2, contains: ["gluten","onion-garlic"], ingredients: ["tinda","onion","tomato"] },
+  { id: "turai-sabzi", name: "Turai sabzi + roti", region: "everyday", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 1, effort: 1, heaviness: 1, contains: ["gluten","onion-garlic"], ingredients: ["ridge gourd","onion","tomato"] },
+  { id: "karela-fry", name: "Karela fry + dal-rice", region: "north", diet: "veg", jain: false, meals: ["lunch"], spice: 2, effort: 2, heaviness: 2, contains: ["onion-garlic"], ingredients: ["bitter gourd","onion","besan"] },
+  { id: "aloo-baingan", name: "Aloo baingan + roti", region: "north", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 2, effort: 1, heaviness: 2, contains: ["gluten","root","onion-garlic"], ingredients: ["potato","brinjal","onion"] },
+  { id: "veg-kurma-appam", name: "Mixed veg kurma + appam", region: "kerala", diet: "veg", jain: false, meals: ["dinner"], spice: 2, effort: 2, heaviness: 2, contains: ["root","onion-garlic"], ingredients: ["mixed vegetables","coconut","onion"] },
+  { id: "palak-dal", name: "Palak dal + rice", region: "everyday", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 1, effort: 1, heaviness: 2, contains: ["onion-garlic"], ingredients: ["spinach","toor dal","rice"] },
+  { id: "methi-malai-mutter", name: "Methi malai mutter + roti", region: "north", diet: "veg", jain: false, meals: ["dinner"], spice: 1, effort: 2, heaviness: 3, contains: ["dairy","gluten","nuts","onion-garlic"], ingredients: ["fenugreek","peas","cream","cashew"] },
+  { id: "capsicum-besan", name: "Capsicum besan sabzi + roti", region: "everyday", diet: "veg", jain: true, meals: ["lunch","dinner"], spice: 2, effort: 1, heaviness: 2, contains: ["gluten"], ingredients: ["capsicum","gram flour"] },
+
+  // More veg — regional gaps
+  { id: "dal-dhokli", name: "Dal dhokli", region: "gujarati", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 1, effort: 2, heaviness: 2, contains: ["gluten"], ingredients: ["toor dal","wheat","jaggery"] },
+  { id: "thalipeeth", name: "Thalipeeth + curd", region: "maharashtrian", diet: "veg", jain: false, meals: ["breakfast","dinner"], spice: 2, effort: 2, heaviness: 2, contains: ["dairy","gluten","onion-garlic"], ingredients: ["multi-grain flour","onion","yogurt"] },
+  { id: "mor-kuzhambu", name: "Mor kuzhambu + rice", region: "south", diet: "veg", jain: false, meals: ["lunch"], spice: 1, effort: 2, heaviness: 1, contains: ["dairy","root"], ingredients: ["yogurt","ash gourd","coconut"] },
+  { id: "enchor-kalia", name: "Enchor (jackfruit) kalia + rice", region: "bengali", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 2, effort: 3, heaviness: 2, contains: ["onion-garlic"], ingredients: ["raw jackfruit","onion","yogurt"] },
+  { id: "pindi-chana", name: "Pindi chana + kulcha", region: "punjabi", diet: "veg", jain: false, meals: ["lunch","dinner"], spice: 2, effort: 2, heaviness: 3, contains: ["gluten","onion-garlic"], ingredients: ["chickpeas","onion","wheat"] },
+
+  // More veg — jain-friendly fillers
+  { id: "jain-pav-bhaji", name: "Jain pav bhaji (no onion/garlic)", region: "maharashtrian", diet: "veg", jain: true, meals: ["dinner","snack"], spice: 2, effort: 2, heaviness: 2, contains: ["gluten","dairy"], ingredients: ["raw banana","capsicum","butter","pav"] },
+  { id: "jain-veg-pulao", name: "Jain veg pulao + raita", region: "everyday", diet: "veg", jain: true, meals: ["lunch","dinner"], spice: 1, effort: 2, heaviness: 2, contains: ["dairy"], ingredients: ["rice","peas","yogurt"] },
+  { id: "jain-dal-khichdi", name: "Jain dal khichdi + papad", region: "gujarati", diet: "veg", jain: true, meals: ["dinner"], spice: 1, effort: 1, heaviness: 1, contains: [], ingredients: ["rice","moong dal","ghee"] },
 ];
 
 export const ALL_REGIONS = [
