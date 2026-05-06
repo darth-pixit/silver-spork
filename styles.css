@@ -176,6 +176,21 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .onboard-form { margin-top: 12px; }
 
+form[hidden] { display: none; }
+.onboard-step[hidden] { display: none; }
+.onboard-step { position: relative; }
+.onboard-back {
+  position: absolute; top: 14px; left: 16px;
+  background: none; border: none; padding: 4px 6px;
+  color: var(--muted); cursor: pointer; font-size: 13px;
+  text-decoration: none;
+}
+.onboard-back:hover { color: var(--fg); }
+.onboard-step h2 { margin-top: 8px; }
+
+.onboard-primary { width: 100%; margin-top: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600; }
+.onboard-step-error { margin-top: 6px; }
+
 .onboard-choice { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; }
 .onboard-card {
   background: #fff; color: var(--fg);
