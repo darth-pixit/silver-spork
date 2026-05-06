@@ -423,10 +423,7 @@ function renderSettings() {
   });
 
   $("s-cook-name").value = currentHousehold.cookName || "";
-  const cp = currentHousehold.cookPhone || "";
-  const m = cp.match(/^(\+\d{1,3})(.*)$/);
-  if (m) { $("s-cook-cc").value = m[1]; $("s-cook-phone").value = m[2]; }
-  else { $("s-cook-phone").value = cp.replace(/\D/g, ""); }
+  splitCC(currentHousehold.cookPhone || "", $("s-cook-cc"), $("s-cook-phone"));
 
   $("s-display-name").value = currentHousehold.memberNames?.[userId] || displayName || "";
   $("join-code-display").textContent = currentHousehold.joinCode || "";
@@ -522,6 +519,16 @@ function flash(id) {
 function digitsWithCC(cc, raw) {
   const d = (raw || "").replace(/\D/g, "");
   return d ? cc + d : "";
+}
+function splitCC(stored, ccSelect, phoneInput) {
+  const ccs = [...ccSelect.options].map((o) => o.value).sort((a, b) => b.length - a.length);
+  const match = ccs.find((c) => stored.startsWith(c));
+  if (match) {
+    ccSelect.value = match;
+    phoneInput.value = stored.slice(match.length);
+  } else {
+    phoneInput.value = stored.replace(/\D/g, "");
+  }
 }
 function slugify(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
