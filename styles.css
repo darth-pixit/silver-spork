@@ -1,7 +1,7 @@
 :root {
   --bg: #faf7f2;
   --fg: #1f1d1b;
-  --muted: #6b6660;
+  --muted: #57524c;
   --accent: #e35d5b;
   --good: #2fa37a;
   --card: #fff;
@@ -48,6 +48,7 @@ main { padding: 16px; max-width: 480px; margin: 0 auto; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center; }
 .tab {
   background: transparent;
+  color: var(--fg);
   border: 1px solid var(--line);
   padding: 6px 12px;
   border-radius: 999px;
@@ -152,7 +153,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   font-size: 12px; padding: 4px 10px; border-radius: 999px;
-  border: 1px solid var(--line); background: #fff; cursor: pointer;
+  border: 1px solid var(--line); background: #fff; color: var(--fg); cursor: pointer;
 }
 .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 .chip.today { border-style: dashed; }
