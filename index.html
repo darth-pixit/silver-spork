@@ -20,26 +20,36 @@
   <main>
     <!-- Household onboarding -->
     <section id="household-view" class="screen" hidden>
-      <div class="card-pane">
+      <div class="card-pane onboard-step" data-step="1">
         <h2>Welcome to Meal Swipe</h2>
-        <p class="hint">First, what should we call you?</p>
+        <p class="hint" id="onboard-step1-hint">First, what should we call you?</p>
 
-        <form id="name-form">
+        <form id="name-form" onsubmit="return false">
           <label>Your name<input id="display-name" required maxlength="30" placeholder="e.g. Anjali" autocomplete="given-name" /></label>
         </form>
 
-        <p class="hint" style="margin-top:8px">Then pick one:</p>
-        <div class="onboard-choice">
-          <button type="button" class="onboard-card active" data-onboard="create">
-            <span class="onboard-card-title">Start a new household</span>
-            <span class="onboard-card-sub">Create a code to share with your family</span>
-          </button>
-          <button type="button" class="onboard-card" data-onboard="join">
-            <span class="onboard-card-title">Join with a code</span>
-            <span class="onboard-card-sub">Got a code from someone? Use it here</span>
-          </button>
+        <div id="onboard-choice-wrap">
+          <p class="hint" style="margin-top:12px">Then pick one:</p>
+          <div class="onboard-choice">
+            <button type="button" class="onboard-card active" data-onboard="create">
+              <span class="onboard-card-title">Start a new household</span>
+              <span class="onboard-card-sub">Create a code to share with your family</span>
+            </button>
+            <button type="button" class="onboard-card" data-onboard="join">
+              <span class="onboard-card-title">Join with a code</span>
+              <span class="onboard-card-sub">Got a code from someone? Use it here</span>
+            </button>
+          </div>
         </div>
 
+        <button type="button" id="onboard-continue" class="primary onboard-primary">Continue</button>
+        <p id="household-error" class="error" hidden></p>
+      </div>
+
+      <div class="card-pane onboard-step" data-step="2-create" hidden>
+        <button type="button" class="link-btn onboard-back">← Back</button>
+        <h2>Set up your household</h2>
+        <p class="hint">A few details so the cook knows who's asking and where to reply.</p>
         <form id="create-household-form" class="onboard-form">
           <label>Household name<input id="hh-name" required maxlength="40" placeholder="e.g. Kapoor home" /></label>
           <label>Cook's name<input id="cook-name" maxlength="40" placeholder="e.g. Sunita didi" /></label>
@@ -55,15 +65,20 @@
               <input id="cook-phone" type="tel" inputmode="numeric" placeholder="Phone" />
             </div>
           </label>
-          <button type="submit">Create household</button>
+          <button type="submit" class="primary">Create household</button>
+          <p class="error onboard-step-error" hidden></p>
         </form>
+      </div>
 
-        <form id="join-household-form" class="onboard-form" hidden>
+      <div class="card-pane onboard-step" data-step="2-join" hidden>
+        <button type="button" class="link-btn onboard-back">← Back</button>
+        <h2>Enter the join code</h2>
+        <p class="hint">Ask whoever set up your family's household for the 6-character code.</p>
+        <form id="join-household-form" class="onboard-form">
           <label>Join code<input id="join-code" required maxlength="6" placeholder="e.g. K7M2QX" autocomplete="off" /></label>
-          <button type="submit">Join</button>
+          <button type="submit" class="primary">Join</button>
+          <p class="error onboard-step-error" hidden></p>
         </form>
-
-        <p id="household-error" class="error" hidden></p>
       </div>
     </section>
 
