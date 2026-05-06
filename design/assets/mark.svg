@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
+  
+  <g transform="rotate(-22 36 36)">
+    <g fill="#D63B2C">
+      <rect x="26" y="6" width="3" height="14" rx="1.2"></rect>
+      <rect x="32" y="6" width="3" height="14" rx="1.2"></rect>
+      <rect x="38" y="6" width="3" height="14" rx="1.2"></rect>
+      <rect x="24" y="18" width="19" height="5" rx="1.8"></rect>
+      <rect x="32" y="22" width="3" height="46" rx="1.5"></rect>
+    </g>
+  </g>
+  <g transform="rotate(22 36 36)">
+    <ellipse cx="36" cy="14" rx="11" ry="13" fill="none" stroke="#E8A53A" stroke-width="3.5"></ellipse>
+    <rect x="34.5" y="26" width="3" height="42" rx="1.5" fill="#E8A53A"></rect>
+  </g>
+  
+  <circle cx="36" cy="40" r="4" fill="#1B1814"></circle>
+  <circle cx="36" cy="40" r="2" fill="#D63B2C"></circle>
+</svg>
