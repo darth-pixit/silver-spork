@@ -2,38 +2,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() { return request.auth != null; }
-    function isMemberOf(hh) {
-      return isSignedIn() && request.auth.uid in hh.data.members;
-    }
-
-    match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
-    }
+    // v1 trust model: anyone with the random household doc id (or the
+    // 6-char join code that maps to it) can read/write. Acceptable for
+    // private use between trusted family members. Harden later with
+    // Firebase App Check if the app gets shared more widely.
 
     match /households/{hid} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid in resource.data.members ||
-         resource.data.joinCode == request.resource.data.joinCode);
-      allow create: if isSignedIn() &&
-        request.auth.uid in request.resource.data.members &&
-        request.resource.data.ownerId == request.auth.uid;
-      allow update: if isSignedIn() &&
-        (request.auth.uid in resource.data.members ||
-         request.auth.uid in request.resource.data.members);
-      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow read, write: if true;
 
       match /swipes/{swipeId} {
-        allow read: if isMemberOf(get(/databases/$(database)/documents/households/$(hid)));
-        allow write: if isSignedIn() &&
-          request.auth.uid == request.resource.data.userId &&
-          request.auth.uid in get(/databases/$(database)/documents/households/$(hid)).data.members;
+        allow read, write: if true;
       }
     }
 
     match /joinIndex/{code} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

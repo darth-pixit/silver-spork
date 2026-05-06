@@ -1,16 +1,26 @@
-import { auth, db } from "./firebase-config.js";
+import { db } from "./firebase-config.js";
 import {
-  RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut,
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import {
-  doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs,
+  doc, setDoc, getDoc, updateDoc, collection, getDocs,
   onSnapshot, serverTimestamp, arrayUnion, arrayRemove, runTransaction, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { DISHES, ALL_REGIONS, DEFAULT_FILTERS, dishesForFilters } from "./dishes.js";
+import { ALL_REGIONS, DEFAULT_FILTERS, dishesForFilters } from "./dishes.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (el) => el && (el.hidden = false);
 const hide = (el) => el && (el.hidden = true);
+
+// ---------- Local identity (no auth) ----------
+
+const userId = (() => {
+  let id = localStorage.getItem("userId");
+  if (!id) {
+    id = (crypto.randomUUID && crypto.randomUUID()) ||
+      "u-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("userId", id);
+  }
+  return id;
+})();
+let displayName = localStorage.getItem("displayName") || "";
 
 const local = {
   liked: JSON.parse(localStorage.getItem("liked") || "[]"),
@@ -21,94 +31,32 @@ const saveLocal = () => {
   localStorage.setItem("disliked", JSON.stringify(local.disliked));
 };
 
-let currentUser = null;
-let currentHousehold = null;        // { id, ...data }
+let currentHousehold = null;
 let unsubHousehold = null;
 let unsubSwipes = null;
-let allSwipes = [];                 // [{ userId, dishId, vote }]
-let confirmationResult = null;
-let recaptcha = null;
+let allSwipes = [];
 
-// ---------- Auth ----------
+// ---------- Boot ----------
 
-function setupRecaptcha() {
-  if (recaptcha) return recaptcha;
-  recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-  return recaptcha;
-}
-
-$("phone-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  hide($("auth-error"));
-  const cc = $("cc").value;
-  const phone = $("phone").value.replace(/\D/g, "");
-  if (!phone) return;
-  $("send-otp-btn").disabled = true;
-  try {
-    const verifier = setupRecaptcha();
-    confirmationResult = await signInWithPhoneNumber(auth, cc + phone, verifier);
-    hide($("phone-form"));
-    show($("otp-form"));
-    $("otp").focus();
-  } catch (err) {
-    showError("auth-error", err.message || "Could not send OTP");
-    try { recaptcha?.clear(); } catch {} recaptcha = null;
-  } finally {
-    $("send-otp-btn").disabled = false;
+(async function boot() {
+  const hid = localStorage.getItem("householdId");
+  if (hid) {
+    try {
+      const snap = await getDoc(doc(db, "households", hid));
+      if (snap.exists() && (snap.data().members || []).includes(userId)) {
+        attachHousehold(hid);
+        return;
+      }
+    } catch {}
+    localStorage.removeItem("householdId");
   }
-});
-
-$("otp-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  hide($("auth-error"));
-  const code = $("otp").value.trim();
-  if (!code || !confirmationResult) return;
-  try {
-    await confirmationResult.confirm(code);
-  } catch (err) {
-    showError("auth-error", "Wrong code, try again");
-  }
-});
-
-$("otp-back").addEventListener("click", () => {
-  hide($("otp-form"));
-  show($("phone-form"));
-  $("otp").value = "";
-});
-
-$("signout-btn").addEventListener("click", async () => {
-  await signOut(auth);
-  location.reload();
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { showAuth(); return; }
-  currentUser = user;
-  await ensureUserDoc(user);
-  await routeAfterAuth();
-});
-
-async function ensureUserDoc(user) {
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, { phone: user.phoneNumber, createdAt: serverTimestamp() });
-  }
-}
-
-// ---------- Household routing ----------
-
-async function routeAfterAuth() {
-  const q = query(collection(db, "households"), where("members", "array-contains", currentUser.uid));
-  const snap = await getDocs(q);
-  if (snap.empty) { showHouseholdOnboarding(); return; }
-  const hhDoc = snap.docs[0];
-  attachHousehold(hhDoc.id);
-}
+  showOnboarding();
+})();
 
 function attachHousehold(hid) {
   if (unsubHousehold) unsubHousehold();
   if (unsubSwipes) unsubSwipes();
+  localStorage.setItem("householdId", hid);
   unsubHousehold = onSnapshot(doc(db, "households", hid), (snap) => {
     if (!snap.exists()) return;
     currentHousehold = { id: snap.id, ...snap.data() };
@@ -121,7 +69,7 @@ function attachHousehold(hid) {
   });
 }
 
-// ---------- Onboarding (create / join) ----------
+// ---------- Onboarding ----------
 
 document.querySelectorAll("#household-view [data-onboard]").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -136,6 +84,7 @@ document.querySelectorAll("#household-view [data-onboard]").forEach((btn) => {
 $("create-household-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   hide($("household-error"));
+  if (!ensureName()) return;
   const name = $("hh-name").value.trim();
   const cookName = $("cook-name").value.trim();
   const cookPhone = digitsWithCC($("cook-cc").value, $("cook-phone").value);
@@ -151,6 +100,7 @@ $("create-household-form").addEventListener("submit", async (e) => {
 $("join-household-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   hide($("household-error"));
+  if (!ensureName()) return;
   const code = $("join-code").value.trim().toUpperCase();
   if (!code) return;
   try {
@@ -161,6 +111,18 @@ $("join-household-form").addEventListener("submit", async (e) => {
   }
 });
 
+function ensureName() {
+  const v = $("display-name").value.trim();
+  if (!v) {
+    showError("household-error", "Enter your name first");
+    $("display-name").focus();
+    return false;
+  }
+  displayName = v;
+  localStorage.setItem("displayName", displayName);
+  return true;
+}
+
 async function createHousehold({ name, cookName, cookPhone }) {
   const code = generateJoinCode();
   const hhRef = doc(collection(db, "households"));
@@ -170,9 +132,9 @@ async function createHousehold({ name, cookName, cookPhone }) {
     if (codeSnap.exists()) throw new Error("Code collision, try again");
     tx.set(hhRef, {
       name, joinCode: code, cookName, cookPhone,
-      ownerId: currentUser.uid,
-      members: [currentUser.uid],
-      memberNames: { [currentUser.uid]: currentUser.phoneNumber || "You" },
+      ownerId: userId,
+      members: [userId],
+      memberNames: { [userId]: displayName },
       filters: DEFAULT_FILTERS,
       createdAt: serverTimestamp(),
     });
@@ -187,34 +149,45 @@ async function joinHousehold(code) {
   if (!codeSnap.exists()) throw new Error("No household with that code");
   const hid = codeSnap.data().householdId;
   await updateDoc(doc(db, "households", hid), {
-    members: arrayUnion(currentUser.uid),
-    [`memberNames.${currentUser.uid}`]: currentUser.phoneNumber || "Member",
+    members: arrayUnion(userId),
+    [`memberNames.${userId}`]: displayName,
   });
   return hid;
 }
 
 function generateJoinCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
   for (let i = 0; i < 6; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
   return out;
 }
 
-// ---------- Top-level view switching ----------
+// ---------- View switching ----------
 
-function showAuth() {
-  show($("auth-view")); hide($("household-view")); hide($("app-view"));
+function showOnboarding() {
+  hide($("app-view"));
+  show($("household-view"));
   hide($("topbar-right"));
+  if (displayName) $("display-name").value = displayName;
 }
-function showHouseholdOnboarding() {
-  hide($("auth-view")); show($("household-view")); hide($("app-view"));
-  hide($("topbar-right"));
-}
+
 function showApp() {
-  hide($("auth-view")); hide($("household-view")); show($("app-view"));
+  hide($("household-view"));
+  show($("app-view"));
   show($("topbar-right"));
   $("household-pill").textContent = currentHousehold.name;
 }
+
+$("leave-btn").addEventListener("click", () => {
+  if (!confirm("Leave this household? Your swipes stay; you can rejoin with the code.")) return;
+  if (unsubHousehold) unsubHousehold();
+  if (unsubSwipes) unsubSwipes();
+  unsubHousehold = unsubSwipes = null;
+  currentHousehold = null;
+  allSwipes = [];
+  localStorage.removeItem("householdId");
+  showOnboarding();
+});
 
 document.querySelectorAll("#app-view nav .tab").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -235,8 +208,8 @@ function renderAll() {
   renderMembers();
 }
 
-function userSwipes(userId) {
-  return allSwipes.filter((s) => s.userId === userId);
+function userSwipes(uid) {
+  return allSwipes.filter((s) => s.userId === uid);
 }
 
 function dishCandidates() {
@@ -247,7 +220,7 @@ function dishCandidates() {
       diet: "veg", meals: ["lunch","dinner"], spice: 1, effort: 1, heaviness: 2, ingredients: [],
     }))
   );
-  const myVotes = new Set(userSwipes(currentUser.uid).map((s) => s.dishId));
+  const myVotes = new Set(userSwipes(userId).map((s) => s.dishId));
   return pool.filter(
     (d) => !myVotes.has(d.id) && !local.liked.includes(d.name) && !local.disliked.includes(d.name)
   );
@@ -287,8 +260,8 @@ async function swipe(vote) {
   if (vote === "like" && !local.liked.includes(dish.name)) local.liked.push(dish.name);
   if (vote === "dislike" && !local.disliked.includes(dish.name)) local.disliked.push(dish.name);
   saveLocal();
-  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${currentUser.uid}_${dish.id}`), {
-    userId: currentUser.uid, dishId: dish.id, dishName: dish.name, vote, at: serverTimestamp(),
+  await setDoc(doc(db, "households", currentHousehold.id, "swipes", `${userId}_${dish.id}`), {
+    userId, dishId: dish.id, dishName: dish.name, vote, at: serverTimestamp(),
   });
   setTimeout(renderCard, 220);
 }
@@ -317,8 +290,8 @@ $("manual-form").addEventListener("submit", async (e) => {
   await updateDoc(doc(db, "households", currentHousehold.id), {
     todaySuggestions: arrayUnion({
       name,
-      byUid: currentUser.uid,
-      byName: currentHousehold.memberNames?.[currentUser.uid] || "Member",
+      byUid: userId,
+      byName: currentHousehold.memberNames?.[userId] || displayName || "Member",
       at: Date.now(),
     }),
   });
@@ -426,7 +399,7 @@ $("reset-week-btn").addEventListener("click", async () => {
   await batch.commit();
 });
 
-// ---------- Settings: filters, cook, regions ----------
+// ---------- Settings ----------
 
 function renderSettings() {
   if (!currentHousehold) return;
@@ -444,9 +417,7 @@ function renderSettings() {
     b.type = "button";
     b.className = "chip" + (excluded.has(key) ? " on" : "");
     b.textContent = label;
-    b.addEventListener("click", () => {
-      b.classList.toggle("on");
-    });
+    b.addEventListener("click", () => b.classList.toggle("on"));
     b.dataset.region = key;
     regWrap.appendChild(b);
   });
@@ -457,6 +428,7 @@ function renderSettings() {
   if (m) { $("s-cook-cc").value = m[1]; $("s-cook-phone").value = m[2]; }
   else { $("s-cook-phone").value = cp.replace(/\D/g, ""); }
 
+  $("s-display-name").value = currentHousehold.memberNames?.[userId] || displayName || "";
   $("join-code-display").textContent = currentHousehold.joinCode || "";
 }
 
@@ -483,7 +455,19 @@ $("cook-form").addEventListener("submit", async (e) => {
   flash("cook-saved");
 });
 
-// ---------- Tastes (personal, localStorage) ----------
+$("me-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const v = $("s-display-name").value.trim();
+  if (!v) return;
+  displayName = v;
+  localStorage.setItem("displayName", displayName);
+  await updateDoc(doc(db, "households", currentHousehold.id), {
+    [`memberNames.${userId}`]: displayName,
+  });
+  flash("me-saved");
+});
+
+// ---------- Tastes ----------
 
 function renderTastes() {
   const fill = (ulId, items, kind) => {
@@ -520,7 +504,7 @@ function renderMembers() {
   const names = currentHousehold.memberNames || {};
   currentHousehold.members.forEach((uid) => {
     const li = document.createElement("li");
-    const me = uid === currentUser.uid ? " (you)" : "";
+    const me = uid === userId ? " (you)" : "";
     const owner = uid === currentHousehold.ownerId ? " · owner" : "";
     li.innerHTML = `<span>${escapeHtml(names[uid] || uid.slice(0, 6))}${me}${owner}</span>`;
     ul.appendChild(li);

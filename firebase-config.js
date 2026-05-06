@@ -1,29 +1,22 @@
-// One-time Firebase setup (do this in your Firebase console, then fill in below):
-//   1. console.firebase.google.com → Add project
-//   2. Build → Authentication → Sign-in method → enable "Phone"
-//   3. Build → Firestore Database → Create database (start in production mode)
-//   4. Project settings → Your apps → Add web app → copy the config object below
-//   5. Authentication → Settings → Authorized domains → add the domain you serve from
-//      (localhost is allowed by default; add your prod host when you deploy)
-//   6. Deploy firestore.rules:  firebase deploy --only firestore:rules
-//      (or paste them into Firestore → Rules in the console)
+// One-time Firebase setup:
+//   1. Build → Firestore Database → Create database (production mode)
+//   2. Build → Firestore → Rules → paste the contents of firestore.rules
+//      (or run: firebase deploy --only firestore:rules)
 //
-// Note: phone OTP requires serving over http(s), not file://. Locally:
-//   python3 -m http.server 8000   →  open http://localhost:8000
+// No Authentication setup needed — this app uses a join code as the secret
+// instead of phone/email login.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 export const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyD3IIeucukA7BdgZ80iVF0Fw1grPt4cKxs",
+  authDomain: "spork-ca095.firebaseapp.com",
+  projectId: "spork-ca095",
+  storageBucket: "spork-ca095.firebasestorage.app",
+  messagingSenderId: "321032417484",
+  appId: "1:321032417484:web:39e83cd99155ed54a8d269",
 };
 
 export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 export const db = getFirestore(app);

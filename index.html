@@ -11,46 +11,20 @@
     <h1>Meal Swipe</h1>
     <div id="topbar-right" hidden>
       <span id="household-pill"></span>
-      <button id="signout-btn" class="link-btn">Sign out</button>
+      <button id="leave-btn" class="link-btn">Leave</button>
     </div>
   </header>
 
   <main>
-    <!-- Auth -->
-    <section id="auth-view" class="screen">
-      <div class="card-pane">
-        <h2>Sign in</h2>
-        <p class="hint">We'll text you a 6-digit code.</p>
-        <form id="phone-form">
-          <div class="phone-row">
-            <select id="cc">
-              <option value="+91" selected>+91 IN</option>
-              <option value="+1">+1 US</option>
-              <option value="+44">+44 UK</option>
-              <option value="+971">+971 AE</option>
-              <option value="+65">+65 SG</option>
-            </select>
-            <input id="phone" type="tel" inputmode="numeric" placeholder="Phone number" required />
-          </div>
-          <button type="submit" id="send-otp-btn">Send OTP</button>
-        </form>
-
-        <form id="otp-form" hidden>
-          <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" required />
-          <button type="submit">Verify</button>
-          <button type="button" id="otp-back" class="link-btn">Use a different number</button>
-        </form>
-
-        <div id="recaptcha-container"></div>
-        <p id="auth-error" class="error" hidden></p>
-      </div>
-    </section>
-
     <!-- Household onboarding -->
     <section id="household-view" class="screen" hidden>
       <div class="card-pane">
-        <h2>Set up your household</h2>
-        <p class="hint">Create one and invite family with the join code, or join one that already exists.</p>
+        <h2>Welcome</h2>
+        <p class="hint">Create a household and share the code, or join one with a code you have.</p>
+
+        <form id="name-form">
+          <label>Your name<input id="display-name" required maxlength="30" placeholder="e.g. Anjali" autocomplete="given-name" /></label>
+        </form>
 
         <div class="tabs">
           <button class="tab active" data-onboard="create">Create</button>
@@ -166,6 +140,13 @@
           </label>
           <button type="submit">Save cook</button>
           <span id="cook-saved" class="saved" hidden>Saved</span>
+        </form>
+
+        <h3>You</h3>
+        <form id="me-form" class="filters">
+          <label>Display name<input id="s-display-name" maxlength="30" /></label>
+          <button type="submit">Save name</button>
+          <span id="me-saved" class="saved" hidden>Saved</span>
         </form>
 
         <h3>Members</h3>
