@@ -175,3 +175,47 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .filters legend { font-size: 12px; color: var(--muted); padding: 0 6px; }
 
 .onboard-form { margin-top: 12px; }
+
+.onboard-choice { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; }
+.onboard-card {
+  background: #fff; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.onboard-card:hover { border-color: var(--fg); }
+.onboard-card.active { border-color: var(--fg); box-shadow: 0 0 0 2px var(--fg) inset; }
+.onboard-card-title { font-size: 15px; font-weight: 600; }
+.onboard-card-sub { font-size: 12px; color: var(--muted); }
+
+.view-toggle { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px; margin-bottom: 12px; gap: 2px; }
+.view-toggle .seg {
+  background: transparent; color: var(--muted);
+  border: none; padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.view-toggle .seg.active { background: var(--fg); color: #fff; }
+
+.list-stack { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.list-row {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  transition: transform .2s ease, opacity .2s ease;
+}
+.list-row.empty {
+  color: var(--muted); justify-content: center; text-align: center;
+  border-style: dashed; background: transparent;
+}
+.list-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.list-row-name { font-size: 16px; font-weight: 600; line-height: 1.2; }
+.list-row-actions { display: flex; gap: 6px; }
+.row-btn {
+  width: 36px; height: 36px; padding: 0; border-radius: 999px;
+  font-size: 16px; font-weight: 700; line-height: 1;
+  border: 1px solid; cursor: pointer;
+}
+.row-btn.nope { background: #fff; color: var(--accent); border-color: var(--accent); }
+.row-btn.yum { background: var(--good); color: #fff; border-color: var(--good); }
+.list-row.swipe-left { transform: translateX(-30%); opacity: 0; }
+.list-row.swipe-right { transform: translateX(30%); opacity: 0; }

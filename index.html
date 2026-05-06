@@ -19,16 +19,23 @@
     <!-- Household onboarding -->
     <section id="household-view" class="screen" hidden>
       <div class="card-pane">
-        <h2>Welcome</h2>
-        <p class="hint">Create a household and share the code, or join one with a code you have.</p>
+        <h2>Welcome to Meal Swipe</h2>
+        <p class="hint">First, what should we call you?</p>
 
         <form id="name-form">
           <label>Your name<input id="display-name" required maxlength="30" placeholder="e.g. Anjali" autocomplete="given-name" /></label>
         </form>
 
-        <div class="tabs">
-          <button class="tab active" data-onboard="create">Create</button>
-          <button class="tab" data-onboard="join">Join</button>
+        <p class="hint" style="margin-top:8px">Then pick one:</p>
+        <div class="onboard-choice">
+          <button type="button" class="onboard-card active" data-onboard="create">
+            <span class="onboard-card-title">Start a new household</span>
+            <span class="onboard-card-sub">Create a code to share with your family</span>
+          </button>
+          <button type="button" class="onboard-card" data-onboard="join">
+            <span class="onboard-card-title">Join with a code</span>
+            <span class="onboard-card-sub">Got a code from someone? Use it here</span>
+          </button>
         </div>
 
         <form id="create-household-form" class="onboard-form">
@@ -67,7 +74,12 @@
       </nav>
 
       <section id="swipe" class="view active">
+        <div class="view-toggle" role="tablist" aria-label="Swipe view">
+          <button type="button" class="seg active" data-mode="cards">🃏 Cards</button>
+          <button type="button" class="seg" data-mode="list">☰ List</button>
+        </div>
         <div id="card-stack" class="card-stack" aria-live="polite"></div>
+        <ul id="list-stack" class="list-stack" hidden></ul>
         <div class="swipe-actions">
           <button id="dislike-btn" class="big nope">Nope</button>
           <button id="like-btn" class="big yum">Yum</button>
